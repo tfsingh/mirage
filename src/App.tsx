@@ -5,8 +5,11 @@ function App() {
   return (
     <>
       <div>
-
-      </div>
+        <div>
+          <img src="/flora.png" width={100}></img>
+          Flora
+        </div>
+      </div >
     </>
   )
 }
