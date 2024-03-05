@@ -14,14 +14,16 @@ stub = modal.Stub("flora-rag")
 
 auth_scheme = HTTPBearer()
 
+volume = modal.Volume.from_name("flora-rag-user-data")
+
 # after rag should be able to use a base model fine tuned on some other data
 
 @stub.cls(
     gpu=GPU_CONFIG,
     image=img,
     secrets=[Secret.from_name("flora-token")],
-    timeout=30,
-    volumes={"/data": modal.Volume.from_name("flora-rag-user-data")}
+    timeout=40,
+    volumes={"/data": volume}
 )
 class RAG:
     @build()
@@ -40,8 +42,6 @@ class RAG:
 
     @web_endpoint(method="POST")
     def rag(self, item: Dict, token: HTTPAuthorizationCredentials = Depends(auth_scheme)):
-        # write data to modal volume/cache with user id
-
         import os
         import json
         from pympler import asizeof
@@ -60,6 +60,7 @@ class RAG:
         user_id = item['user_id']
         model_id = item['model_id']
 
+
         if asizeof.asizeof(data) > 1_500_000:
             return "Size of data exceeds limit (~1 mb)"
 
@@ -67,12 +68,18 @@ class RAG:
 
         file_path = f"/data/{user_id}-{model_id}.json"
 
+        volume.reload()
+
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
                 data = json.load(file)
         else:
             with open(file_path, 'w') as file:
                 json.dump(data, file)
+            volume.commit()
+
+        if not data:
+            return "Issue loading data from volume"
 
         docs = data if item['chunked'] else text_splitter.split_text(data)
         k = min(item['k'], len(docs))
