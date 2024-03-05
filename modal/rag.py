@@ -6,14 +6,13 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 GPU_CONFIG = gpu.Any()
 
-#img = Image.from_registry("nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04", 
+#img = Image.from_registry("nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04",
 #add_python="3.10").apt_install("git").pip_install("ragatouille", "nltk") (used if we'd like to index instead)
 img = modal.Image.debian_slim().apt_install("git").pip_install("ragatouille", "nltk", "pympler")
 
 stub = modal.Stub("flora-rag")
-stub.data_storage = modal.Dict.new() 
 
-auth_scheme = HTTPBearer() 
+auth_scheme = HTTPBearer()
 
 # after rag should be able to use a base model fine tuned on some other data
 
@@ -21,7 +20,8 @@ auth_scheme = HTTPBearer()
     gpu=GPU_CONFIG,
     image=img,
     secrets=[Secret.from_name("flora-token")],
-    timeout=30
+    timeout=30,
+    volumes={"/data": modal.Volume.from_name("flora-rag-user-data")}
 )
 class RAG:
     @build()
@@ -43,6 +43,7 @@ class RAG:
         # write data to modal volume/cache with user id
 
         import os
+        import json
         from pympler import asizeof
 
 
@@ -61,20 +62,24 @@ class RAG:
 
         if asizeof.asizeof(data) > 1_500_000:
             return "Size of data exceeds limit (~1 mb)"
-        
+
         text_splitter = NLTKTextSplitter(chunk_size=256)
-        
-        if stub.data_storage.contains((user_id, model_id)):
-            data = stub.data_storage[(user_id, model_id)]
+
+        file_path = f"/data/{user_id}-{model_id}.json"
+
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as file:
+                data = json.load(file)
         else:
-            stub.data_storage.put((user_id, model_id), data)
-        
+            with open(file_path, 'w') as file:
+                json.dump(data, file)
+
         docs = data if item['chunked'] else text_splitter.split_text(data)
         k = min(item['k'], len(docs))
 
         search_results = self.model.rerank(
             query=item['query'], documents=docs, k=k
         )
-    
+
         return [result["content"] for result in search_results]
-    
+
