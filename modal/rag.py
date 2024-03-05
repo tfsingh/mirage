@@ -11,6 +11,8 @@ img = modal.Image.debian_slim().apt_install("git").pip_install("ragatouille", "n
 stub = modal.Stub("flora-rag")
 auth_scheme = HTTPBearer() 
 
+# after rag should be able to use a base model fine tuned on some other data
+
 @stub.cls(
     gpu=GPU_CONFIG,
     image=img,
@@ -35,6 +37,7 @@ class RAG:
     @web_endpoint(method="POST")
     def rag(self, item: Dict, token: HTTPAuthorizationCredentials = Depends(auth_scheme)):
         import os
+        # write data to modal volume/cache with user id
 
         if token.credentials != os.environ["AUTH_TOKEN"]:
             raise HTTPException(
@@ -53,3 +56,4 @@ class RAG:
         )
 
         return [result["content"] for result in search_results]
+    
