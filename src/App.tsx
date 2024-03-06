@@ -85,7 +85,7 @@ const App = () => {
       data: data,
       chunked: (type === "url") ? true : false,
       user_id: 1000, // filler
-      model_id: 11 // filler
+      model_id: 14821 // filler
     }
 
     try {
