@@ -10,18 +10,18 @@ GPU_CONFIG = gpu.Any()
 #add_python="3.10").apt_install("git").pip_install("ragatouille", "nltk") (used if we'd like to index instead)
 img = modal.Image.debian_slim().apt_install("git").pip_install("ragatouille", "nltk", "pympler")
 
-stub = modal.Stub("flora-rag")
+stub = modal.Stub("mirage-rag")
 
 auth_scheme = HTTPBearer()
 
-volume = modal.Volume.from_name("flora-rag-user-data")
+volume = modal.Volume.from_name("mirage-rag-user-data")
 
 # after rag should be able to use a base model fine tuned on some other data
 
 @stub.cls(
     gpu=GPU_CONFIG,
     image=img,
-    secrets=[Secret.from_name("flora-token")],
+    secrets=[Secret.from_name("mirage-token")],
     timeout=40,
     volumes={"/data": volume}
 )

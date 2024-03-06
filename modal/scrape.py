@@ -4,7 +4,7 @@ from modal import web_endpoint, Stub, Image, Secret
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-stub = Stub("flora-scrape")
+stub = Stub("mirage-scrape")
 
 auth_scheme = HTTPBearer()
 
@@ -95,7 +95,7 @@ async def scrape_page(item: Dict):
 
     return url, "\n".join(text_data)
 
-@stub.function(secrets=[Secret.from_name("flora-token")], timeout=40)
+@stub.function(secrets=[Secret.from_name("mirage-token")], timeout=40)
 @web_endpoint(method="POST")
 async def scrape(item: Dict, token: HTTPAuthorizationCredentials = Depends(auth_scheme)):
     import os

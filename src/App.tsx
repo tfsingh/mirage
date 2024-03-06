@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import './App.css';
 
 const App = () => {
@@ -16,7 +17,6 @@ const App = () => {
     setFile(uploadedFile);
     if (uploadedFile) {
       setName(uploadedFile.name);
-      // You can handle the file submission here or in a separate function
     }
   };
 
@@ -43,27 +43,50 @@ const App = () => {
     setDepth(event.target.value);
   };
 
-  const handleSubmitUrl = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>, type: string) => {
     event.preventDefault();
-    console.log(name)
-    console.log(url)
-    console.log(selectedTags)
-    console.log(baseUrl)
-    console.log(ignoreFragments)
-    console.log(depth)
-  };
+    const token = import.meta.env.VITE_MIRAGE_AUTH_TOKEN_MODAL;
+    const scrape_endpoint = import.meta.env.VITE_SCRAPE_ENDPOINT;
+    const rag_endpoint = import.meta.env.VITE_RAG_ENDPOINT;
+    console.log(scrape_endpoint)
 
-  const handleSubmitFile = () => {
-    console.log(file);
-  };
+    let data;
+    if (type === "url") {
+      const requestBody = {
+        url: url,
+        depth: parseInt(depth),
+        rules: {
+          must_start_with: baseUrl,
+          ignore_fragments: ignoreFragments,
+          valid_selectors: selectedTags
+        }
+      };
 
+      try {
+        const response = await axios.post(scrape_endpoint, requestBody, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log(response.data);
+        data = response.data;
+      } catch (error) {
+        console.error('There was an error!', error);
+      }
+    } else {
+      console.log("not implemented yet");
+    }
+    // send data to modal
+  };
 
   if (currentView === 'upload') {
     return (
       <div className="flex justify-center items-center flex-col">
         <div className="flex justify-center items-center mb-4">
-          <img src="/flora.png" width={75} alt="Flora" />
-          <h1 className='text-5xl'>Flora</h1>
+          <img src="/mirage.png" width={75} alt="mirage" />
+          <h1 className='text-5xl'>mirage</h1>
         </div>
         <form className="flex flex-col justify-center items-center">
           <label className="block mb-2">
@@ -86,9 +109,9 @@ const App = () => {
           <button
             type="button"
             className="mt-4 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"
-            onClick={() => {
+            onClick={(event) => {
               if (file) {
-                handleSubmitFile()
+                handleSubmit(event, "file")
               } else if (url) {
                 setCurrentView('form');
               }
@@ -100,15 +123,24 @@ const App = () => {
       </div>
     );
   } else if (currentView === 'form' && url) {
-    // This view is shown only if a URL was entered
     return (
-      <form onSubmit={handleSubmitUrl} className="flex flex-col justify-center items-center">
+      <form onSubmit={(event) => handleSubmit(event, "url")} className="flex flex-col justify-center items-center">
         <input
           type="text"
           placeholder="Name"
           className="mb-4 block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-500 focus:outline-none"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          required
+        />
+        <input
+          type="number"
+          placeholder="Depth (unique links to scrape)"
+          value={depth}
+          onChange={handleDepthChange}
+          className="mt-4 block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-500 focus:outline-none"
+          required
+          max="300"
         />
         <div>
           <label className="block mb-2">HTML Tags:</label>
@@ -138,13 +170,7 @@ const App = () => {
           />
           <label className="ml-2">Ignore Fragments</label>
         </div>
-        <input
-          type="number"
-          placeholder="Depth"
-          value={depth}
-          onChange={handleDepthChange}
-          className="mt-4 block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-500 focus:outline-none"
-        />
+
         <button
           type="submit"
           className="mt-4 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-700"

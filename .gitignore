@@ -29,3 +29,4 @@ modal/returned_data.csv
 modal/interop.py
 
 .env
+.env.local
