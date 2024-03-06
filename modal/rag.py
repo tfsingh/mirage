@@ -52,7 +52,7 @@ class RAG:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect bearer token",
                 headers={"WWW-Authenticate": "Bearer"},
-        )
+            )
 
         from langchain_text_splitters import NLTKTextSplitter
 
@@ -60,28 +60,47 @@ class RAG:
         user_id = item['user_id']
         model_id = item['model_id']
 
+        # for inference, data is always chunked
+        data = data if item['chunked'] else text_splitter.split_text(data)
 
         if asizeof.asizeof(data) > 1_500_000:
-            return "Size of data exceeds limit (~1 mb)"
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Size of data exceeds limit (~1.5 mb)",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
         text_splitter = NLTKTextSplitter(chunk_size=256)
 
         file_path = f"/data/{user_id}-{model_id}.json"
-
         volume.reload()
+
+        docs = []
 
         if os.path.exists(file_path):
             with open(file_path, 'r') as file:
-                data = json.load(file)
+                docs = json.load(file)
         else:
             with open(file_path, 'w') as file:
                 json.dump(data, file)
+            docs = data
             volume.commit()
 
-        if not data:
-            return "Issue loading data from volume"
+        if not docs:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Issue loading data from volume",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        if docs and not item['query']:
+            return ""
 
-        docs = data if item['chunked'] else text_splitter.split_text(data)
+        # idea — encapsulate data if not chunked and then do a for all, split data
+        # can put another rule that says "chunk whole page"
+
+        # ISSUE — CHUNKED ONLY IN CAS 
+
         k = min(item['k'], len(docs))
 
         search_results = self.model.rerank(

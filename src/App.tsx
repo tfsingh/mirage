@@ -48,9 +48,9 @@ const App = () => {
     const token = import.meta.env.VITE_MIRAGE_AUTH_TOKEN_MODAL;
     const scrape_endpoint = import.meta.env.VITE_SCRAPE_ENDPOINT;
     const rag_endpoint = import.meta.env.VITE_RAG_ENDPOINT;
-    console.log(scrape_endpoint)
 
     let data;
+
     if (type === "url") {
       const requestBody = {
         url: url,
@@ -69,16 +69,35 @@ const App = () => {
             'Content-Type': 'application/json'
           }
         });
-
-        console.log(response.data);
+        console.log(response.data)
         data = response.data;
       } catch (error) {
         console.error('There was an error!', error);
       }
-    } else {
-      console.log("not implemented yet");
+    } else if (file) {
+      data = new FormData();
+      data.append('file', file);
     }
-    // send data to modal
+
+    console.log("Sending next request")
+    const requestBody = {
+      query: "",
+      data: data,
+      chunked: (type === "url") ? true : false,
+      user_id: 1000, // filler
+      model_id: 11 // filler
+    }
+
+    try {
+      const response = await axios.post(rag_endpoint, requestBody, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+    } catch (error) {
+      console.error('There was an error!', error);
+    }
   };
 
   if (currentView === 'upload') {
