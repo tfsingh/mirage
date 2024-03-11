@@ -6,6 +6,7 @@ import Config from './Config';
 
 
 const drawerWidth = 240;
+const textFromNavbar = 60;
 
 const Dashboard = () => {
 
@@ -53,9 +54,9 @@ const Dashboard = () => {
     localStorage.setItem('chat_messages', JSON.stringify(updatedMessages));
   };
 
-  // if (showConfig) {
-  //   return (<Config />)
-  // }
+  if (showConfig) {
+    return <Config />
+  }
 
   return (
     <Box sx={{ display: 'flex', height: '100vh' }}>
@@ -91,7 +92,7 @@ const Dashboard = () => {
       </Drawer>
 
       <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-        <AppBar position="static">
+        <AppBar position="fixed">
           <Toolbar>
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
               Mirage
@@ -101,12 +102,12 @@ const Dashboard = () => {
             </IconButton>
           </Toolbar>
         </AppBar>
-        <Box sx={{ flexGrow: 1, overflow: 'auto', p: 3, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ flexGrow: 1, overflow: 'auto', p: 3, display: 'flex', flexDirection: 'column', position: 'fixed', top: textFromNavbar, left: drawerWidth, right: 0 }}>
           {messages[currentChat]?.map((msg, index) => (
             <Typography key={index} sx={{ textAlign: 'left' }}>{msg.text}</Typography>
           ))}
         </Box>
-        <Box sx={{ p: 1, display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ p: 1, display: 'flex', alignItems: 'center', position: 'fixed', bottom: 0, left: drawerWidth, right: 0 }}>
           <TextField
             fullWidth
             variant="outlined"
