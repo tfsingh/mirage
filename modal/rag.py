@@ -16,8 +16,6 @@ auth_scheme = HTTPBearer()
 
 volume = modal.Volume.from_name("mirage-rag-user-data")
 
-# after rag should be able to use a base model fine tuned on some other data
-
 @stub.cls(
     gpu=GPU_CONFIG,
     image=img,
@@ -85,6 +83,7 @@ class RAG:
                 json.dump(data, file)
             docs = data
             volume.commit()
+            return "Stored data"
 
         if not docs:
             raise HTTPException(
@@ -93,9 +92,6 @@ class RAG:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        if docs and not item['query']:
-            return ""
-
         # idea — encapsulate data if not chunked and then do a for all, split data
         # can put another rule that says "chunk whole page"
 
