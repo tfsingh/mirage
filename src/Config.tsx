@@ -3,7 +3,6 @@ import axios from 'axios';
 import { AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip, Container } from '@mui/material';
 import './App.css';
 
-
 const Config = () => {
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');

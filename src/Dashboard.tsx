@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar, Typography, IconButton, Container, Tooltip } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
 import Config from './Config';
+import { MeshGradientRenderer } from '@johnn-e/react-mesh-gradient';
 
 interface Chat {
   model_name: string;
@@ -68,12 +69,42 @@ const Dashboard = () => {
     localStorage.setItem('chat_messages', JSON.stringify(updatedMessages));
   };
 
+  const gradient = (
+    <Container
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        minWidth: '100vw',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'stretch',
+        justifyContent: 'stretch',
+        zIndex: -1,
+      }}
+      sx={{ ml: -3 }}
+    >
+      <MeshGradientRenderer
+        className="gradient"
+        style={{ width: '100%', height: '100%' }}
+        colors={[
+          "#e3ccc5",
+          "#d1afa3",
+          "#ebd5c0",
+          "#e6d5c3",
+          "#e6dac3"
+        ]}
+      />
+    </Container >
+  );
+
   if (showConfig) {
-    return <Config />;
+    return <>{gradient}<Config /></>;
   }
 
   return (
     <Container>
+      {gradient}
       <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column', m: 0 }}>
         <AppBar position="static" sx={{ bgcolor: '#9ab08f', m: 0 }}>
           <Toolbar sx={{ m: 0, p: 0 }}>
@@ -97,7 +128,6 @@ const Dashboard = () => {
             </IconButton>
           </Toolbar>
         </AppBar>
-
 
         <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden', boxShadow: 4 }}>
           <List sx={{ minWidth: '20%', overflowY: 'auto', bgcolor: '#BCC6BC', m: 0, mt: -1 }}>
