@@ -2,14 +2,32 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip, Container } from '@mui/material';
 import './App.css';
+import Snackbar, { SnackbarOrigin } from '@mui/material/Snackbar';
 
-const Config = () => {
+
+const Config = ({ supabase, session }) => {
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [baseUrl, setBaseUrl] = useState('');
     const [ignoreFragments, setIgnoreFragments] = useState(false);
     const [depth, setDepth] = useState('1');
+    const [state, setState] = React.useState<State>({
+        open: false,
+        vertical: 'top',
+        horizontal: 'center',
+    });
+    const [snackbarMessage, setSnackbarMessage] = useState('');
+
+    const { vertical, horizontal, open } = state;
+
+    const handleClick = (newState: SnackbarOrigin) => () => {
+        setState({ ...newState, open: true });
+    };
+
+    const handleClose = () => {
+        setState({ ...state, open: false });
+    };
 
     const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setUrl(event.target.value);
@@ -35,67 +53,104 @@ const Config = () => {
         setDepth(event.target.value);
     };
 
+    const cleanUp = async (model_id) => {
+        console.log(model_id)
+        const { error } = await supabase.from('models').delete().eq('model_id', model_id)
+
+        if (error) {
+            console.error("Error in cleanup", error);
+        }
+    }
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const token = import.meta.env.VITE_MIRAGE_AUTH_TOKEN_MODAL;
         const scrape_endpoint = import.meta.env.VITE_SCRAPE_ENDPOINT;
         const rag_endpoint = import.meta.env.VITE_RAG_ENDPOINT;
+        let scrape_data;
 
-        let data;
-
-        console.log(url, name, selectedTags, baseUrl, ignoreFragments, depth)
         if (selectedTags.length === 0) {
             setSelectedTags(['p']);
         }
 
-        // if (type === "url") {
-        //   const requestBody = {
-        //     url: url,
-        //     depth: parseInt(depth),
-        //     rules: {
-        //       must_start_with: baseUrl,
-        //       ignore_fragments: ignoreFragments,
-        //       valid_selectors: selectedTags
-        //     }
-        //   };
+        if (!url || !name || !depth || !selectedTags) {
+            console.error("Required data not present")
+            return
+        }
 
-        //   try {
-        //     const response = await axios.post(scrape_endpoint, requestBody, {
-        //       headers: {
-        //         'Authorization': `Bearer ${token}`,
-        //         'Content-Type': 'application/json'
-        //       }
-        //     });
-        //     console.log(response.data)
-        //     data = response.data;
-        //   } catch (error) {
-        //     console.error('There was an error!', error);
-        //   }
-        // } 
+        let { data, error } = await supabase
+            .from('models')
+            .insert([
+                { user_id: session.user.id, model_name: name }
+            ]).select();
 
-        // console.log("Sending next request")
-        // const requestBody = {
-        //   query: "",
-        //   data: data,
-        //   chunked: (type === "url") ? true : false,
-        //   user_id: 1000, // filler
-        //   model_id: 14821 // filler
-        // }
+        if (error || data === null) {
+            console.error('Error inserting model:', error);
+            if (error.code === '23505') {
+                setSnackbarMessage("Duplicate model name not allowed");
+                setState({ ...state, open: true });
+                return;
+            }
+            return;
+        }
 
-        // try {
-        //   const response = await axios.post(rag_endpoint, requestBody, {
-        //     headers: {
-        //       'Authorization': `Bearer ${token}`,
-        //       'Content-Type': 'application/json'
-        //     }
-        //   });
-        // } catch (error) {
-        //   console.error('There was an error!', error);
-        // }
+        data = data[0]
+
+        const scrapeRequestBody = {
+            url: url,
+            depth: parseInt(depth),
+            rules: {
+                must_start_with: baseUrl,
+                ignore_fragments: ignoreFragments,
+                valid_selectors: selectedTags
+            }
+        };
+
+        try {
+            const response = await axios.post(scrape_endpoint, scrapeRequestBody, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            console.log(response.data)
+            scrape_data = response.data;
+        } catch (error) {
+            console.error('There was an error!', error);
+            cleanUp(data.model_id)
+            return
+        }
+
+        const initializeRequestBody = {
+            query: "",
+            data: scrape_data,
+            chunked: true,
+            user_id: data.user_id,
+            model_id: data.model_id,
+        }
+
+        try {
+            const response = await axios.post(rag_endpoint, initializeRequestBody, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+        } catch (error) {
+            console.error('There was an error!', error);
+            cleanUp(data.model_id)
+        }
     };
 
     return (
         <Container>
+            <Snackbar
+                open={open}
+                autoHideDuration={3000}
+                onClose={handleClose}
+                message={snackbarMessage}
+                key={vertical + horizontal}
+            />
             <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                 <Box sx={{ backgroundColor: 'white', maxWidth: '600px', margin: '0 auto', width: 'auto', bgcolor: '#F2F1E9' }}>
                     <AppBar position="static" color="default" sx={{

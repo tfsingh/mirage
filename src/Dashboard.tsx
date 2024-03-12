@@ -10,7 +10,6 @@ import { createClient } from '@supabase/supabase-js'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeMinimal } from '@supabase/auth-ui-shared'
 
-
 interface Chat {
   model_name: string;
   model_id: number;
@@ -110,7 +109,6 @@ const Dashboard = () => {
     setSession(null);
   };
 
-
   const gradient = (
     <Container
       style={{
@@ -143,7 +141,7 @@ const Dashboard = () => {
   if (showConfig) {
     return <>
       {gradient}
-      <Config />
+      <Config supabase={supabase} session={session} />
     </>;
   }
 

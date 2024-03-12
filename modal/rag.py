@@ -44,7 +44,6 @@ class RAG:
         import json
         from pympler import asizeof
 
-
         if token.credentials != os.environ["AUTH_TOKEN"]:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
