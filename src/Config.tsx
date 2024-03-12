@@ -95,9 +95,9 @@ const Config = () => {
     return (
         <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" m={4}>
 
-            <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" mb={0}>
+            <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" mb={0} >
                 <Typography variant="h4" gutterBottom>
-                    scraping config
+                    new chat
                 </Typography>
             </Box>
 
