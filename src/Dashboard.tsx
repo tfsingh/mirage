@@ -66,7 +66,7 @@ const Dashboard = () => {
 
   return (
     <Container>
-      <Box sx={{ display: 'flex', height: '90vh', flexDirection: 'column' }}>
+      <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column' }}>
         <AppBar position="static" sx={{ bgcolor: '#9ab08f' }}>
           <Toolbar>
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
