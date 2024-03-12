@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar, Typography, IconButton, Container, Tooltip } from '@mui/material';
+import { Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar, Typography, IconButton, Container, Tooltip, Button } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
+import LogoutIcon from '@mui/icons-material/Logout';
 import Config from './Config';
 import { MeshGradientRenderer } from '@johnn-e/react-mesh-gradient';
+import { createClient } from '@supabase/supabase-js'
+import { Auth } from '@supabase/auth-ui-react'
+import { ThemeMinimal } from '@supabase/auth-ui-shared'
+
 
 interface Chat {
   model_name: string;
@@ -16,6 +21,8 @@ interface Message {
   timestamp: Date;
 }
 
+const supabase = createClient(import.meta.env.VITE_SUPABASE_ENDPOINT, import.meta.env.VITE_SUPABASE_KEY)
+
 const Dashboard = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -24,14 +31,36 @@ const Dashboard = () => {
     { model_name: 'Chat 2', model_id: 2 },
   ]);
 
-  const [currentChat, setCurrentChat] = useState<number | null>(() => {
-    const savedCurrentChat = localStorage.getItem('current_chat');
-    return savedCurrentChat ? JSON.parse(savedCurrentChat) : chats[0]?.model_id || null;
-  });
-
+  const [currentChat, setCurrentChat] = useState<number | null>(null);
   const [currentMessage, setCurrentMessage] = useState('');
   const [messages, setMessages] = useState<Record<number, Message[]>>({});
   const [showConfig, setShowConfig] = useState(false);
+  const [session, setSession] = useState(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) {
+        setCurrentChat(getSavedCurrentChat(session.user.id));
+        setMessages(getStoredMessages(session.user.id));
+      }
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) {
+        setCurrentChat(getSavedCurrentChat(session.user.id));
+        setMessages(getStoredMessages(session.user.id));
+      } else {
+        setCurrentChat(null);
+        setMessages({});
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, []);
 
   useEffect(() => {
     if (messagesContainerRef.current) {
@@ -41,17 +70,23 @@ const Dashboard = () => {
   }, [messages]);
 
   useEffect(() => {
-    const storedMessages = localStorage.getItem('chat_messages');
-    if (storedMessages) {
-      setMessages(JSON.parse(storedMessages));
+    if (session && currentChat !== null) {
+      localStorage.setItem(`current_chat_${session.user.id}`, JSON.stringify(currentChat));
     }
-  }, []);
+  }, [currentChat, session]);
 
-  useEffect(() => {
-    localStorage.setItem('current_chat', JSON.stringify(currentChat));
-  }, [currentChat]);
+  const getSavedCurrentChat = (userId) => {
+    const savedCurrentChat = localStorage.getItem(`current_chat_${userId}`);
+    return savedCurrentChat ? JSON.parse(savedCurrentChat) : chats[0]?.model_id || null;
+  };
+
+  const getStoredMessages = (userId) => {
+    const storedMessages = localStorage.getItem(`chat_messages_${userId}`);
+    return storedMessages ? JSON.parse(storedMessages) : {};
+  };
 
   const handleSendMessage = () => {
+    if (!session) return;
     const newMessage: Message = { text: currentMessage, timestamp: new Date() };
     const updatedMessages = {
       ...messages,
@@ -59,15 +94,22 @@ const Dashboard = () => {
     };
 
     setMessages(updatedMessages);
-    localStorage.setItem('chat_messages', JSON.stringify(updatedMessages));
+    localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(updatedMessages));
     setCurrentMessage('');
   };
 
   const handleClearChat = () => {
+    if (!session) return;
     const updatedMessages = { ...messages, [currentChat!]: [] };
     setMessages(updatedMessages);
-    localStorage.setItem('chat_messages', JSON.stringify(updatedMessages));
+    localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(updatedMessages));
   };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  };
+
 
   const gradient = (
     <Container
@@ -99,7 +141,10 @@ const Dashboard = () => {
   );
 
   if (showConfig) {
-    return <>{gradient}<Config /></>;
+    return <>
+      {gradient}
+      <Config />
+    </>;
   }
 
   return (
@@ -116,16 +161,36 @@ const Dashboard = () => {
 
             <div style={{ flexGrow: 1 }}></div>
 
-            <IconButton onClick={handleClearChat}>
-              <Tooltip title="clear chat" placement="top">
-                <DeleteIcon />
-              </Tooltip>
-            </IconButton>
-            <IconButton onClick={() => setShowConfig(true)}>
-              <Tooltip title="create new chat" placement="top">
-                <AddIcon />
-              </Tooltip>
-            </IconButton>
+            {
+              session ? (
+                <>
+                  <IconButton onClick={handleClearChat}>
+                    <Tooltip title="clear chat" placement="top">
+                      <DeleteIcon />
+                    </Tooltip>
+                  </IconButton>
+                  <IconButton onClick={() => setShowConfig(true)}>
+                    <Tooltip title="new chat" placement="top">
+                      <AddIcon />
+                    </Tooltip>
+                  </IconButton>
+                  <IconButton onClick={() => handleSignOut()}>
+                    <Tooltip title="logout" placement="top">
+                      <LogoutIcon />
+                    </Tooltip>
+                  </IconButton>
+                </>
+              ) : (
+                <Auth
+                  supabaseClient={supabase}
+                  providers={['google']}
+                  appearance={{ theme: ThemeMinimal }}
+                  onlyThirdPartyProviders={true}
+                />
+              )
+            }
+
+
           </Toolbar>
         </AppBar>
 
