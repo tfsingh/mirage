@@ -5,23 +5,31 @@ import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
 import Config from './Config';
 
+interface Chat {
+  model_name: string;
+  model_id: number;
+}
+
+interface Message {
+  text: string;
+  timestamp: Date;
+}
+
 const Dashboard = () => {
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const messagesContainerRef = useRef(null);
-
-  const [chats, setChats] = useState([
+  const [chats, setChats] = useState<Chat[]>([
     { model_name: 'Chat 1', model_id: 1 },
     { model_name: 'Chat 2', model_id: 2 },
   ]);
 
-
-  const [currentChat, setCurrentChat] = useState(() => {
+  const [currentChat, setCurrentChat] = useState<number | null>(() => {
     const savedCurrentChat = localStorage.getItem('current_chat');
     return savedCurrentChat ? JSON.parse(savedCurrentChat) : chats[0]?.model_id || null;
   });
 
   const [currentMessage, setCurrentMessage] = useState('');
-  const [messages, setMessages] = useState({});
+  const [messages, setMessages] = useState<Record<number, Message[]>>({});
   const [showConfig, setShowConfig] = useState(false);
 
   useEffect(() => {
@@ -43,10 +51,10 @@ const Dashboard = () => {
   }, [currentChat]);
 
   const handleSendMessage = () => {
-    const newMessage = { text: currentMessage, timestamp: new Date() };
+    const newMessage: Message = { text: currentMessage, timestamp: new Date() };
     const updatedMessages = {
       ...messages,
-      [currentChat]: [...(messages[currentChat] || []), newMessage],
+      [currentChat!]: [...(messages[currentChat!] || []), newMessage],
     };
 
     setMessages(updatedMessages);
@@ -55,7 +63,7 @@ const Dashboard = () => {
   };
 
   const handleClearChat = () => {
-    const updatedMessages = { ...messages, [currentChat]: [] };
+    const updatedMessages = { ...messages, [currentChat!]: [] };
     setMessages(updatedMessages);
     localStorage.setItem('chat_messages', JSON.stringify(updatedMessages));
   };
@@ -66,11 +74,11 @@ const Dashboard = () => {
 
   return (
     <Container>
-      <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column' }}>
-        <AppBar position="static" sx={{ bgcolor: '#9ab08f' }}>
-          <Toolbar>
+      <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column', m: 0 }}>
+        <AppBar position="static" sx={{ bgcolor: '#9ab08f', m: 0 }}>
+          <Toolbar sx={{ m: 0, p: 0 }}>
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-              Mirage
+              mirage
             </Typography>
             <IconButton color="inherit" onClick={handleClearChat}>
               <DeleteIcon />
@@ -82,9 +90,14 @@ const Dashboard = () => {
         </AppBar>
 
         <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden', boxShadow: 4 }}>
-          <List sx={{ minWidth: '240px', overflowY: 'auto', bgcolor: '#BCC6BC' }}>
+          <List sx={{ minWidth: '20%', overflowY: 'auto', bgcolor: '#BCC6BC', m: 0 }}>
             {chats.map((chat) => (
-              <ListItem button key={chat.model_id} onClick={() => setCurrentChat(chat.model_id)}>
+              <ListItem
+                button
+                key={chat.model_id}
+                onClick={() => setCurrentChat(chat.model_id)}
+                sx={{ bgcolor: currentChat === chat.model_id ? 'rgba(0, 0, 0, 0.1)' : 'inherit' }}
+              >
                 <ListItemText primary={chat.model_name} />
               </ListItem>
             ))}
@@ -95,7 +108,7 @@ const Dashboard = () => {
               sx={{ flexGrow: 1, overflow: 'auto', p: 3, bgcolor: '#F2F1E9', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
               ref={messagesContainerRef}
             >
-              {messages[currentChat]?.map((msg, index) => (
+              {currentChat !== null && messages[currentChat]?.map((msg: Message, index: number) => (
                 <Typography key={index} sx={{ textAlign: 'left', overflowWrap: 'break-word' }}>
                   {msg.text}
                 </Typography>

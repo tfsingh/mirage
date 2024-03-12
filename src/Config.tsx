@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Grid } from '@mui/material';
+import { Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip } from '@mui/material';
 import './App.css';
+
 
 const Config = () => {
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');
-    const [currentView, setCurrentView] = useState('upload');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [baseUrl, setBaseUrl] = useState('');
     const [ignoreFragments, setIgnoreFragments] = useState(false);
-    const [depth, setDepth] = useState('');
+    const [depth, setDepth] = useState(1);
 
     const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setUrl(event.target.value);
@@ -45,6 +45,9 @@ const Config = () => {
         let data;
 
         console.log(url, name, selectedTags, baseUrl, ignoreFragments, depth)
+        if (selectedTags.length === 0) {
+            setSelectedTags(['p']);
+        }
 
         // if (type === "url") {
         //   const requestBody = {
@@ -105,6 +108,16 @@ const Config = () => {
                 <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" mr={4} >
                     <FormControl component="form" onSubmit={handleSubmit} variant="standard" sx={{ width: '100%', maxWidth: '500px' }}>
                         <TextField
+                            label="chat name"
+                            variant="outlined"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            fullWidth
+                            required
+                            sx={{ mb: 2 }}
+                            inputProps={{ maxLength: 20 }}
+                        />
+                        <TextField
                             label="url"
                             variant="outlined"
                             value={url}
@@ -113,34 +126,29 @@ const Config = () => {
                             required
                             sx={{ mb: 2 }}
                         />
-                        <TextField
-                            label="name"
-                            variant="outlined"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            fullWidth
-                            required
-                            sx={{ mb: 2 }}
-                        />
-                        <TextField
-                            label="depth (unique links to scrape)"
-                            type="number"
-                            variant="outlined"
-                            value={depth}
-                            onChange={handleDepthChange}
-                            fullWidth
-                            required
-                            inputProps={{ max: 300 }}
-                            sx={{ mb: 2 }}
-                        />
-                        <TextField
-                            label="base url"
-                            variant="outlined"
-                            value={baseUrl}
-                            onChange={handleBaseUrlChange}
-                            fullWidth
-                            sx={{ mb: 2 }}
-                        />
+                        <Tooltip title="unique links to scrape" placement="left">
+                            <TextField
+                                label="depth"
+                                type="number"
+                                variant="outlined"
+                                value={depth}
+                                onChange={handleDepthChange}
+                                fullWidth
+                                required
+                                inputProps={{ min: 1, max: 300 }}
+                                sx={{ mb: 2 }}
+                            />
+                        </Tooltip>
+                        <Tooltip title="url to restrict scraping to" placement="left">
+                            <TextField
+                                label="base url"
+                                variant="outlined"
+                                value={baseUrl}
+                                onChange={handleBaseUrlChange}
+                                fullWidth
+                                sx={{ mb: 1 }}
+                            />
+                        </Tooltip>
                         <FormControlLabel
                             control={<Checkbox checked={ignoreFragments} onChange={handleIgnoreFragmentsChange} />}
                             label="ignore fragments"
@@ -154,8 +162,8 @@ const Config = () => {
 
                 <Box display="flex" flexDirection="column" alignItems="flex-start" justifyContent="center">
                     <FormGroup>
-                        <FormLabel>HTML Tags:</FormLabel>
-                        {['h1', 'h2', 'h3', 'p', 'code', 'pre', 'div'].map((tag) => (
+                        <FormLabel>tags to scrape:</FormLabel>
+                        {['h1', 'h2', 'h3', 'p', 'code', 'li', 'table'].map((tag) => (
                             <FormControlLabel
                                 key={tag}
                                 control={<Checkbox value={tag} checked={selectedTags.includes(tag)} onChange={handleTagChange} />}
