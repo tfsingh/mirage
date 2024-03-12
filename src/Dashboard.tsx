@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar, Typography, IconButton, Container } from '@mui/material';
+import { Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar, Typography, IconButton, Container, Tooltip } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
@@ -77,21 +77,31 @@ const Dashboard = () => {
       <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column', m: 0 }}>
         <AppBar position="static" sx={{ bgcolor: '#9ab08f', m: 0 }}>
           <Toolbar sx={{ m: 0, p: 0 }}>
-            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+            <div style={{ flexGrow: 1 }}></div>
+
+            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontSize: '28px', display: 'flex', justifyContent: 'center', ml: '90px', color: '#3a4037' }}>
               mirage
             </Typography>
-            <IconButton color="inherit" onClick={handleClearChat}>
-              <DeleteIcon />
+
+            <div style={{ flexGrow: 1 }}></div>
+
+            <IconButton onClick={handleClearChat}>
+              <Tooltip title="clear chat" placement="top">
+                <DeleteIcon />
+              </Tooltip>
             </IconButton>
-            <IconButton color="inherit" onClick={() => setShowConfig(true)}>
-              <AddIcon />
+            <IconButton onClick={() => setShowConfig(true)}>
+              <Tooltip title="create new chat" placement="top">
+                <AddIcon />
+              </Tooltip>
             </IconButton>
           </Toolbar>
         </AppBar>
 
+
         <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden', boxShadow: 4 }}>
-          <List sx={{ minWidth: '20%', overflowY: 'auto', bgcolor: '#BCC6BC', m: 0 }}>
-            {chats.map((chat) => (
+          <List sx={{ minWidth: '20%', overflowY: 'auto', bgcolor: '#BCC6BC', m: 0, mt: -1 }}>
+            {chats.map((chat, i) => (
               <ListItem
                 button
                 key={chat.model_id}
@@ -105,11 +115,11 @@ const Dashboard = () => {
 
           <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
             <Box
-              sx={{ flexGrow: 1, overflow: 'auto', p: 3, bgcolor: '#F2F1E9', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+              sx={{ flexGrow: 1, overflow: 'auto', p: 3, bgcolor: '#F2F1E9', whiteSpace: 'pre-wrap', wordBreak: 'break-word', mb: -3, mt: -1 }}
               ref={messagesContainerRef}
             >
               {currentChat !== null && messages[currentChat]?.map((msg: Message, index: number) => (
-                <Typography key={index} sx={{ textAlign: 'left', overflowWrap: 'break-word' }}>
+                <Typography key={index} sx={{ textAlign: 'left', overflowWrap: 'break-word', mb: 1 }}>
                   {msg.text}
                 </Typography>
               ))}
@@ -125,7 +135,7 @@ const Dashboard = () => {
                 sx={{ mr: 1 }}
               />
               <IconButton color="primary" onClick={handleSendMessage}>
-                <SendIcon />
+                <SendIcon sx={{ color: 'grey' }} />
               </IconButton>
             </Box>
           </Box>

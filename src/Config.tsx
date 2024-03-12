@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip } from '@mui/material';
+import { AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip, Container } from '@mui/material';
 import './App.css';
 
 
@@ -10,7 +10,7 @@ const Config = () => {
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [baseUrl, setBaseUrl] = useState('');
     const [ignoreFragments, setIgnoreFragments] = useState(false);
-    const [depth, setDepth] = useState(1);
+    const [depth, setDepth] = useState('1');
 
     const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setUrl(event.target.value);
@@ -96,84 +96,129 @@ const Config = () => {
     };
 
     return (
-        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" m={4}>
-
-            <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" mb={0} >
-                <Typography variant="h4" gutterBottom>
+        <Container>
+            <AppBar position="static" color="default" sx={{
+                alignItems: 'center', justifyContent: 'center', width: '366px', maxWidth: '600px', margin: '0 auto', height: '50px', bgcolor: '#9ab08f'
+            }}>
+                <Typography variant="h6" gutterBottom sx={{ mt: 1.5, fontSize: '28px', color: '#3a4037' }}>
                     new chat
                 </Typography>
-            </Box>
+            </AppBar>
 
-            <Box display="flex" flexDirection="row" alignItems="flex-start" justifyContent="center">
-                <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" mr={4} >
-                    <FormControl component="form" onSubmit={handleSubmit} variant="standard" sx={{ width: '100%', maxWidth: '500px' }}>
-                        <TextField
-                            label="chat name"
-                            variant="outlined"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            fullWidth
-                            required
-                            sx={{ mb: 2 }}
-                            inputProps={{ maxLength: 20 }}
-                        />
-                        <TextField
-                            label="url"
-                            variant="outlined"
-                            value={url}
-                            onChange={handleUrlChange}
-                            fullWidth
-                            required
-                            sx={{ mb: 2 }}
-                        />
-                        <Tooltip title="unique links to scrape" placement="left">
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <Box sx={{ backgroundColor: 'white', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', p: 1, margin: '0 auto', maxWidth: '600px', width: 'auto', bgcolor: '#F2F1E9' }}>
+                    <Box sx={{ backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mr: 2, p: 1, maxWidth: '650px', bgcolor: '#F2F1E9' }}>
+                        <FormControl component="form" onSubmit={handleSubmit} variant="standard" sx={{ width: '100%', bgcolor: '#F2F1E9' }}>
                             <TextField
-                                label="depth"
-                                type="number"
+                                label="chat name"
                                 variant="outlined"
-                                value={depth}
-                                onChange={handleDepthChange}
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
                                 fullWidth
                                 required
-                                inputProps={{ min: 1, max: 300 }}
-                                sx={{ mb: 2 }}
+                                size="small"
+                                sx={{ mb: 1 }}
+                                inputProps={{ maxLength: 20 }}
                             />
-                        </Tooltip>
-                        <Tooltip title="url to restrict scraping to" placement="left">
                             <TextField
-                                label="base url"
+                                label="url"
                                 variant="outlined"
-                                value={baseUrl}
-                                onChange={handleBaseUrlChange}
+                                value={url}
+                                onChange={handleUrlChange}
                                 fullWidth
+                                required
+                                size="small"
                                 sx={{ mb: 1 }}
                             />
-                        </Tooltip>
-                        <FormControlLabel
-                            control={<Checkbox checked={ignoreFragments} onChange={handleIgnoreFragmentsChange} />}
-                            label="ignore fragments"
-                            sx={{ mb: 2 }}
-                        />
-                        <Button type="submit" variant="contained" color="primary">
-                            submit
-                        </Button>
-                    </FormControl>
-                </Box>
+                            <Tooltip
+                                title="unique links to scrape"
+                                placement="left"
+                                PopperProps={{
+                                    modifiers: [
+                                        {
+                                            name: 'offset',
+                                            options: {
+                                                offset: [0, -10],
+                                            },
+                                        },
+                                    ],
+                                }}
+                            >
+                                <TextField
+                                    label="depth"
+                                    type="number"
+                                    variant="outlined"
+                                    value={depth}
+                                    onChange={handleDepthChange}
+                                    fullWidth
+                                    required
+                                    size="small"
+                                    inputProps={{ min: 1, max: 300 }}
+                                    sx={{ mb: 1 }}
+                                />
+                            </Tooltip>
 
-                <Box display="flex" flexDirection="column" alignItems="flex-start" justifyContent="center">
-                    <FormGroup>
-                        <FormLabel>tags to scrape:</FormLabel>
-                        {['h1', 'h2', 'h3', 'p', 'code', 'li', 'table'].map((tag) => (
+                            <Tooltip
+                                title="url to restrict scraping to"
+                                placement="left"
+                                PopperProps={{
+                                    modifiers: [
+                                        {
+                                            name: 'offset',
+                                            options: {
+                                                offset: [0, -10],
+                                            },
+                                        },
+                                    ],
+                                }}>
+                                <TextField
+                                    label="base url"
+                                    variant="outlined"
+                                    value={baseUrl}
+                                    onChange={handleBaseUrlChange}
+                                    fullWidth
+                                    size="small"
+                                    sx={{ mb: 0.5 }}
+                                />
+                            </Tooltip>
                             <FormControlLabel
-                                key={tag}
-                                control={<Checkbox value={tag} checked={selectedTags.includes(tag)} onChange={handleTagChange} />}
-                                label={tag}
+                                control={<Checkbox size="small" checked={ignoreFragments} onChange={handleIgnoreFragmentsChange} />}
+                                label="ignore fragments"
+                                sx={{ mb: 0.5 }}
                             />
-                        ))}
-                    </FormGroup>
+
+                            <Button type="submit" variant="contained" color="primary" size="small"
+                                sx={{
+                                    bgcolor: '#9ab08f',
+                                    color: '#3a4037',
+                                    textTransform: 'lowercase',
+                                    fontSize: '18px',
+                                    '&:hover': {
+                                        bgcolor: '#9ab08f',
+                                        color: '#3a4037',
+                                    }
+                                }}>
+                                submit
+                            </Button>
+                        </FormControl>
+                    </Box>
+
+                    <Box sx={{ backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', p: 1, bgcolor: '#F2F1E9' }}>
+                        <FormGroup>
+                            <FormLabel component="legend">tags to scrape:</FormLabel>
+                            {['h1', 'h2', 'h3', 'p', 'code', 'li', 'table'].map((tag) => (
+                                <FormControlLabel
+                                    key={tag}
+                                    control={<Checkbox size="small" value={tag} checked={selectedTags.includes(tag)} onChange={handleTagChange} />}
+                                    label={tag}
+                                    sx={{ margin: 0, padding: 0 }}
+                                />
+                            ))}
+                        </FormGroup>
+                    </Box>
                 </Box>
             </Box>
-        </Box>
+        </Container>
     );
 };
 
