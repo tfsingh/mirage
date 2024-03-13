@@ -90,9 +90,6 @@ class RAG:
                 detail="Issue loading data from volume",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        
-        # idea — encapsulate data if not chunked and then do a for all, split data
-        # can put another rule that says "chunk whole page"
 
         k = min(3, len(docs))
 

@@ -129,12 +129,11 @@ app.post('/api/configure-chat', async (req, res) => {
     }
 
     modelData = data;
-
-    console.log(modelData);
   } catch (error) {
     console.error('Supabase insertion error:', error);
     return res.status(500).send('Error interacting with the database');
   }
+  console.log(selectedTags);
 
   try {
     const scrapeRequestBody = {
@@ -157,7 +156,7 @@ app.post('/api/configure-chat', async (req, res) => {
         },
       }
     );
-
+    console.log('data', scrapeData.data);
     const initializeRequestBody = {
       query: '',
       data: scrapeData.data,

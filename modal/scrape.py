@@ -62,15 +62,18 @@ async def traverse(item: Dict):
             url = to_scrape.popleft()
         visited_links.add(url)
 
-
         new_links = await get_links.remote.aio(url, rules)
 
         seen_links.update(new_links)
+
+        if len(seen_links) >= n:
+            break
+
         [to_scrape.append(link) for link in new_links]
 
         n = len(seen_links)
 
-    return list(seen_links)[:n]
+    return ([user_url] + list(seen_links))[:n]
 
 
 @stub.function(image=playwright_image)
@@ -110,7 +113,7 @@ async def scrape(item: Dict, token: HTTPAuthorizationCredentials = Depends(auth_
     if item['depth'] > 300:
         return "Cannot exceed depth 300"
 
-    links = await traverse.remote.aio(item)
+    links = await traverse.remote.aio(item) if item['depth'] != 1 else [item['url']]
     data = []
     params = ({'url': url, 'rules': item['rules']} for url in links)
     for url, text in scrape_page.map(params, return_exceptions=True):

@@ -57,9 +57,13 @@ const Config = ({ supabase, session }) => {
         event.preventDefault();
         const userId = session.user.id;
 
-        if (!userId || !name || !url || !depth || !selectedTags) {
+        if (userId === "" || name === "" || url === "" || depth === null) {
             console.error("Required data not present");
             return;
+        }
+
+        if (selectedTags.length === 0) {
+            setSelectedTags(['p'])
         }
 
         try {
