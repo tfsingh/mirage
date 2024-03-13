@@ -3,6 +3,7 @@ import axios from 'axios';
 import { AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip, Container } from '@mui/material';
 import './App.css';
 import Snackbar, { SnackbarOrigin } from '@mui/material/Snackbar';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 
 const Config = ({ supabase, session }) => {
@@ -53,7 +54,7 @@ const Config = ({ supabase, session }) => {
         setDepth(event.target.value);
     };
 
-    const cleanUp = async (model_id) => {
+    const cleanUp = async (model_id: string) => {
         console.log(model_id)
         const { error } = await supabase.from('models').delete().eq('model_id', model_id)
 
@@ -94,7 +95,7 @@ const Config = ({ supabase, session }) => {
             return;
         }
 
-        data = data[0]
+        data = data[0];
 
         const scrapeRequestBody = {
             url: url,

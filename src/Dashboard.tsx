@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar, Typography, IconButton, Container, Tooltip, Button } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -9,6 +9,7 @@ import { MeshGradientRenderer } from '@johnn-e/react-mesh-gradient';
 import { createClient } from '@supabase/supabase-js'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeMinimal } from '@supabase/auth-ui-shared'
+import Snackbar, { SnackbarOrigin } from '@mui/material/Snackbar';
 
 interface Chat {
   model_name: string;
@@ -21,6 +22,8 @@ interface Message {
 }
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_ENDPOINT, import.meta.env.VITE_SUPABASE_KEY)
+
+const RATE_LIMIT = 30
 
 const Dashboard = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -35,6 +38,23 @@ const Dashboard = () => {
   const [messages, setMessages] = useState<Record<number, Message[]>>({});
   const [showConfig, setShowConfig] = useState(false);
   const [session, setSession] = useState(null)
+  const [state, setState] = React.useState<State>({
+    open: false,
+    vertical: 'top',
+    horizontal: 'center',
+  });
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+
+  const { vertical, horizontal, open } = state;
+
+  const handleClick = (newState: SnackbarOrigin) => () => {
+    setState({ ...newState, open: true });
+  };
+
+  const handleClose = () => {
+    setState({ ...state, open: false });
+  };
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -84,8 +104,42 @@ const Dashboard = () => {
     return storedMessages ? JSON.parse(storedMessages) : {};
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!session) return;
+
+    let { data: existingData, error: existingError } = await supabase
+      .from('rate_limit')
+      .select('count')
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (existingData) {
+      if (existingData.count < RATE_LIMIT) {
+        let { data: updatedData, error: updateError } = await supabase
+          .from('rate_limit')
+          .update({ count: existingData.count + 1 })
+          .eq('user_id', session.user.id)
+          .single();
+        if (updateError) {
+          console.error("Error while updating")
+        }
+      } else {
+        setSnackbarMessage("Rate limit reached, please wait");
+        setState({ ...state, open: true });
+        return
+      }
+    } else {
+      let { data: insertedData, error: insertError } = await supabase
+        .from('rate_limit')
+        .insert([{ user_id: session.user.id, count: 1 }])
+        .single();
+      if (insertError) {
+        console.error("Error while inserting")
+      }
+    }
+
+
+
     const newMessage: Message = { text: currentMessage, timestamp: new Date() };
     const updatedMessages = {
       ...messages,
@@ -147,6 +201,13 @@ const Dashboard = () => {
 
   return (
     <Container>
+      <Snackbar
+        open={open}
+        autoHideDuration={3000}
+        onClose={handleClose}
+        message={snackbarMessage}
+        key={vertical + horizontal}
+      />
       {gradient}
       <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column', m: 0 }}>
         <AppBar position="static" sx={{ bgcolor: '#9ab08f', m: 0 }}>
