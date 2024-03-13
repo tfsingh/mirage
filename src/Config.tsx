@@ -35,7 +35,6 @@ const Config = ({ supabase, session }) => {
     };
 
     const handleTagChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.log(event)
         const tag = event.target.value;
         setSelectedTags((tags) =>
             tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag]
@@ -54,92 +53,35 @@ const Config = ({ supabase, session }) => {
         setDepth(event.target.value);
     };
 
-    const cleanUp = async (model_id: string) => {
-        console.log(model_id)
-        const { error } = await supabase.from('models').delete().eq('model_id', model_id)
-
-        if (error) {
-            console.error("Error in cleanup", error);
-        }
-    }
-
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
-        const token = import.meta.env.VITE_MIRAGE_AUTH_TOKEN_MODAL;
-        const scrape_endpoint = import.meta.env.VITE_SCRAPE_ENDPOINT;
-        const rag_endpoint = import.meta.env.VITE_RAG_ENDPOINT;
-        let scrape_data;
+        const userId = session.user.id;
 
-        if (selectedTags.length === 0) {
-            setSelectedTags(['p']);
-        }
-
-        if (!url || !name || !depth || !selectedTags) {
-            console.error("Required data not present")
-            return
-        }
-
-        let { data, error } = await supabase
-            .from('models')
-            .insert([
-                { user_id: session.user.id, model_name: name }
-            ]).select();
-
-        if (error || data === null) {
-            console.error('Error inserting model:', error);
-            if (error.code === '23505') {
-                setSnackbarMessage("Duplicate model name not allowed");
-                setState({ ...state, open: true });
-                return;
-            }
+        if (!userId || !name || !url || !depth || !selectedTags) {
+            console.error("Required data not present");
             return;
         }
 
-        data = data[0];
+        try {
+            const response = await axios.post('/api/configure-chat', {
+                userId,
+                name,
+                url,
+                depth,
+                selectedTags,
+                baseUrl,
+                ignoreFragments,
+            });
 
-        const scrapeRequestBody = {
-            url: url,
-            depth: parseInt(depth),
-            rules: {
-                must_start_with: baseUrl,
-                ignore_fragments: ignoreFragments,
-                valid_selectors: selectedTags
+            if (response.data && response.data.message) {
+                console.log(response.data.message);
+
             }
-        };
-
-        try {
-            const response = await axios.post(scrape_endpoint, scrapeRequestBody, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            console.log(response.data)
-            scrape_data = response.data;
         } catch (error) {
-            console.error('There was an error!', error);
-            cleanUp(data.model_id)
-            return
-        }
-
-        const initializeRequestBody = {
-            query: "",
-            data: scrape_data,
-            chunked: true,
-            user_id: data.user_id,
-            model_id: data.model_id,
-        }
-
-        try {
-            const response = await axios.post(rag_endpoint, initializeRequestBody, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-        } catch (error) {
-            console.error('There was an error!', error);
-            cleanUp(data.model_id)
+            console.error('There was an error:', error);
+            let messageToDisplay = error.response.status === 400 ? "Duplicate not allowed" : "Error configuring chat"
+            setSnackbarMessage(messageToDisplay)
+            setState({ ...state, open: true });
         }
     };
 

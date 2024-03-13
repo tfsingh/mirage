@@ -10,6 +10,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeMinimal } from '@supabase/auth-ui-shared'
 import Snackbar, { SnackbarOrigin } from '@mui/material/Snackbar';
+import axios from 'axios';
 
 interface Chat {
   model_name: string;
@@ -23,16 +24,10 @@ interface Message {
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_ENDPOINT, import.meta.env.VITE_SUPABASE_KEY)
 
-const RATE_LIMIT = 30
-
 const Dashboard = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const [chats, setChats] = useState<Chat[]>([
-    { model_name: 'Chat 1', model_id: 1 },
-    { model_name: 'Chat 2', model_id: 2 },
-  ]);
-
+  const [chats, setChats] = useState<Chat[]>([]);
   const [currentChat, setCurrentChat] = useState<number | null>(null);
   const [currentMessage, setCurrentMessage] = useState('');
   const [messages, setMessages] = useState<Record<number, Message[]>>({});
@@ -55,14 +50,20 @@ const Dashboard = () => {
     setState({ ...state, open: false });
   };
 
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        setCurrentChat(getSavedCurrentChat(session.user.id));
-        setMessages(getStoredMessages(session.user.id));
-      }
+      setSession(session)
+      const fetchChats = async () => {
+        try {
+          const response = await axios.get('/api/chats', { params: { userId: session.user.id } });
+          setChats(response.data);
+        } catch (error) {
+          console.error('Error fetching chats:', error.message);
+        }
+      };
+      setCurrentChat(getSavedCurrentChat(session.user.id));
+      setMessages(getStoredMessages(session.user.id));
+      fetchChats();
     })
 
     const {
@@ -76,9 +77,10 @@ const Dashboard = () => {
         setCurrentChat(null);
         setMessages({});
       }
-    })
+    });
 
-    return () => subscription.unsubscribe()
+    return () => subscription.unsubscribe();
+
   }, []);
 
   useEffect(() => {
@@ -104,52 +106,46 @@ const Dashboard = () => {
     return storedMessages ? JSON.parse(storedMessages) : {};
   };
 
+
   const handleSendMessage = async () => {
-    if (!session) return;
+    if (!session || currentChat === null) return;
 
-    let { data: existingData, error: existingError } = await supabase
-      .from('rate_limit')
-      .select('count')
-      .eq('user_id', session.user.id)
-      .single();
+    const timestamp = new Date();
+    const newMessage = { text: currentMessage, timestamp };
 
-    if (existingData) {
-      if (existingData.count < RATE_LIMIT) {
-        let { data: updatedData, error: updateError } = await supabase
-          .from('rate_limit')
-          .update({ count: existingData.count + 1 })
-          .eq('user_id', session.user.id)
-          .single();
-        if (updateError) {
-          console.error("Error while updating")
-        }
-      } else {
-        setSnackbarMessage("Rate limit reached, please wait");
-        setState({ ...state, open: true });
-        return
-      }
-    } else {
-      let { data: insertedData, error: insertError } = await supabase
-        .from('rate_limit')
-        .insert([{ user_id: session.user.id, count: 1 }])
-        .single();
-      if (insertError) {
-        console.error("Error while inserting")
-      }
-    }
-
-
-
-    const newMessage: Message = { text: currentMessage, timestamp: new Date() };
-    const updatedMessages = {
-      ...messages,
-      [currentChat!]: [...(messages[currentChat!] || []), newMessage],
+    const updateMessages = (newMessages) => {
+      setMessages(newMessages);
+      localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(newMessages));
     };
 
-    setMessages(updatedMessages);
-    localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(updatedMessages));
+    const updatedMessages = {
+      ...messages,
+      [currentChat]: [...(messages[currentChat] || []), newMessage],
+    };
+    updateMessages(updatedMessages);
     setCurrentMessage('');
+
+    try {
+      const { data: { response } } = await axios.post('/api/send-message', {
+        userId: session.user.id,
+        currentChat,
+        userMessage: currentMessage,
+        modelId: chats.find(chat => chat.model_id === currentChat)?.model_id,
+      });
+
+      const responseMessage = { text: response, timestamp };
+      const updatedMessagesWithResponse = {
+        ...updatedMessages,
+        [currentChat]: [...updatedMessages[currentChat], responseMessage],
+      };
+      updateMessages(updatedMessagesWithResponse);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setSnackbarMessage("Error sending message");
+      setState((prevState) => ({ ...prevState, open: true }));
+    }
   };
+
 
   const handleClearChat = () => {
     if (!session) return;

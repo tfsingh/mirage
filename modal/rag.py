@@ -94,7 +94,7 @@ class RAG:
         # idea — encapsulate data if not chunked and then do a for all, split data
         # can put another rule that says "chunk whole page"
 
-        k = min(item['k'], len(docs))
+        k = min(3, len(docs))
 
         search_results = self.model.rerank(
             query=item['query'], documents=docs, k=k
