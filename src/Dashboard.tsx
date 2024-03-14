@@ -55,10 +55,6 @@ const Dashboard = () => {
 
   const { vertical, horizontal, open } = state;
 
-  const handleClick = (newState: SnackbarOrigin) => () => {
-    setState({ ...newState, open: true });
-  };
-
   const handleClose = () => {
     setState({ ...state, open: false });
   };
@@ -326,23 +322,24 @@ const Dashboard = () => {
 
         <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden', boxShadow: 4 }}>
           <List sx={{ minWidth: '20%', overflowY: 'auto', bgcolor: '#BCC6BC', m: 0, mt: -1 }}>
-            {chats.map((chat, i) => (
-              <ListItem
-                button
-                key={chat.model_id}
-                onClick={() => setCurrentChat(chat.model_id)}
-                sx={{
-                  bgcolor: currentChat === chat.model_id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  setAnchorEl(e.currentTarget);
-                  setChatToDelete(chat.model_id);
-                }}
-              >
-                <ListItemText primary={chat.model_name} />
-              </ListItem>
-            ))}
+            {//@ts-ignore
+              chats.map((chat, i) => (
+                <ListItem
+                  button
+                  key={chat.model_id}
+                  onClick={() => setCurrentChat(chat.model_id)}
+                  sx={{
+                    bgcolor: currentChat === chat.model_id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setAnchorEl(e.currentTarget);
+                    setChatToDelete(chat.model_id);
+                  }}
+                >
+                  <ListItemText primary={chat.model_name} />
+                </ListItem>
+              ))}
           </List>
           <Menu
             anchorEl={anchorEl}

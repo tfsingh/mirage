@@ -33,10 +33,6 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
 
     const { vertical, horizontal, open } = state;
 
-    const handleClick = (newState: SnackbarOrigin) => () => {
-        setState({ ...newState, open: true });
-    };
-
     const handleClose = () => {
         setState({ ...state, open: false });
     };
