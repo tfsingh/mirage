@@ -17,5 +17,8 @@
   },
   "type": "module",
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.5.2"
+  }
 }
