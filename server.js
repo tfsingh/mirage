@@ -30,7 +30,9 @@ app.get('/api/chats', async (req, res) => {
       .select('model_id, model_name')
       .eq('user_id', userId);
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
     res.json(chats);
   } catch (error) {

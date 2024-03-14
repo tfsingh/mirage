@@ -3,8 +3,6 @@ import axios from 'axios';
 import { AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip, Container, LinearProgress } from '@mui/material';
 import './App.css';
 import Snackbar, { SnackbarOrigin } from '@mui/material/Snackbar';
-import { SupabaseClient } from '@supabase/supabase-js';
-
 
 const Config = ({ supabase, session, refreshDash }) => {
     const [url, setUrl] = useState('');
