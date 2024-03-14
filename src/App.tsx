@@ -1,9 +1,9 @@
-import { AppRouter } from './AppRouter';
+import Dashboard from "./Dashboard";
 
 function App() {
     return (
         <div>
-            <AppRouter />
+            <Dashboard />
         </div>
     );
 }
