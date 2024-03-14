@@ -20,6 +20,7 @@ interface Chat {
 interface Message {
   text: string;
   timestamp: Date;
+  isResponse: boolean;
 }
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_ENDPOINT, import.meta.env.VITE_SUPABASE_KEY)
@@ -109,11 +110,12 @@ const Dashboard = () => {
   };
 
 
+
   const handleSendMessage = async () => {
     if (!session || currentChat === null) return;
 
     const timestamp = new Date();
-    const newMessage = { text: currentMessage, timestamp };
+    const newMessage = { text: currentMessage, timestamp, isResponse: false };
 
     const updateMessages = (newMessages) => {
       setMessages(newMessages);
@@ -137,7 +139,7 @@ const Dashboard = () => {
         modelId: chats.find(chat => chat.model_id === currentChat)?.model_id,
       });
 
-      const responseMessage = { text: response, timestamp };
+      const responseMessage = { text: response, timestamp, isResponse: true };
       const updatedMessagesWithResponse = {
         ...updatedMessages,
         [currentChat]: [...updatedMessages[currentChat], responseMessage],
@@ -280,7 +282,16 @@ const Dashboard = () => {
               ref={messagesContainerRef}
             >
               {currentChat !== null && messages[currentChat]?.map((msg: Message, index: number) => (
-                <Typography key={index} sx={{ textAlign: 'left', overflowWrap: 'break-word', mb: 1 }}>
+                <Typography
+                  key={index}
+                  sx={{
+                    textAlign: 'left',
+                    overflowWrap: 'break-word',
+                    mb: 1,
+                    bgcolor: msg.isResponse ? 'rgba(0, 0, 0, 0.05)' : 'transparent',
+                    p: msg.isResponse ? 1 : 0,
+                  }}
+                >
                   {msg.text}
                 </Typography>
               ))}

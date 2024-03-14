@@ -257,12 +257,12 @@ const Config = ({ supabase, session, refreshDash }) => {
                             <Box sx={{ backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', p: 1, bgcolor: '#F2F1E9' }}>
                                 <FormGroup>
                                     <FormLabel component="legend">tags to scrape:</FormLabel>
-                                    {['h1', 'h2', 'h3', 'p', 'code', 'li', 'table'].map((tag) => (
+                                    {['h1', 'h2', 'h3', 'p', 'code', 'li', 'textarea', 'table', 'div'].map((tag) => (
                                         <FormControlLabel
                                             key={tag}
                                             control={<Checkbox size="small" value={tag} checked={selectedTags.includes(tag)} onChange={handleTagChange} />}
                                             label={tag}
-                                            sx={{ margin: 0, padding: 0 }}
+                                            sx={{ margin: 0, padding: 0, mb: -1 }}
                                         />
                                     ))}
                                 </FormGroup>

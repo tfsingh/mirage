@@ -13,7 +13,7 @@ playwright_image = Image.debian_slim(python_version="3.10").run_commands(
     "apt-get install -y software-properties-common",
     "apt-add-repository non-free",
     "apt-add-repository contrib",
-    "pip install ray playwright==1.30.0",
+    "pip install ray playwright==1.30.0 bs4",
     "playwright install-deps chromium",
     "playwright install chromium",
 )
@@ -79,22 +79,26 @@ async def traverse(item: Dict):
 @stub.function(image=playwright_image)
 async def scrape_page(item: Dict):
     from playwright.async_api import async_playwright
+    from bs4 import BeautifulSoup
 
     url = item['url']
-    rules = item['rules']
+    valid_selectors = item['rules']['valid_selectors']
     text_data = []
+
     async with async_playwright() as p:
         browser = await p.chromium.launch()
-
         page = await browser.new_page()
-
         await page.goto(url)
 
-        for selector in rules['valid_selectors']:
-            texts = await page.eval_on_selector_all(selector, "elements => elements.map(element => element.innerText)")
-            text_data.extend(texts)
+        html = await page.content()
+        soup = BeautifulSoup(html, 'html.parser')
+
+        for element in soup.descendants:
+            if element.name in valid_selectors:
+                text_data.append(element.get_text(strip=True))
 
         await browser.close()
+
 
     return url, "\n".join(text_data)
 

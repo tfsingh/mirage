@@ -59,10 +59,10 @@ class RAG:
 
         data_size = asizeof.asizeof(data)
 
-        if data_size < 100 and not item['inference']:
+        if data_size < 500 and not item['inference']:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Size of data too small (< 100b)",
+                detail="Size of data too small (< 500b)",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -92,6 +92,7 @@ class RAG:
             docs = data
             volume.commit()
             return "Stored data"
+
 
         if not docs:
             raise HTTPException(
