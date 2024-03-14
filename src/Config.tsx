@@ -4,7 +4,18 @@ import { AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup, Typog
 import './App.css';
 import Snackbar, { SnackbarOrigin } from '@mui/material/Snackbar';
 
-const Config = ({ supabase, session, refreshDash }) => {
+interface SnackbarState {
+    open: boolean;
+    vertical: 'top' | 'bottom';
+    horizontal: 'left' | 'center' | 'right';
+}
+
+interface ConfigProps {
+    session: any;
+    refreshDash: any;
+}
+
+const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -13,7 +24,7 @@ const Config = ({ supabase, session, refreshDash }) => {
     const [chunkPages, setChunkPages] = useState(false);
     const [scraping, setScraping] = useState(false);
     const [depth, setDepth] = useState('1');
-    const [state, setState] = React.useState<State>({
+    const [state, setState] = React.useState<SnackbarState>({
         open: false,
         vertical: 'top',
         horizontal: 'center',
@@ -57,7 +68,7 @@ const Config = ({ supabase, session, refreshDash }) => {
         setDepth(event.target.value);
     };
 
-    const handleSubmit = async (event) => {
+    const handleSubmit = async (event: any) => {
         event.preventDefault();
         setScraping(true);
         const userId = session.user.id;
@@ -99,7 +110,7 @@ const Config = ({ supabase, session, refreshDash }) => {
             if (response.data && response.data.message) {
                 refreshDash()
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('There was an error:', error);
             let messageToDisplay;
             if (error.response && error.response.status === 400) {
@@ -274,7 +285,7 @@ const Config = ({ supabase, session, refreshDash }) => {
 
                             <Box sx={{ backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', p: 1, bgcolor: '#F2F1E9' }}>
                                 <FormGroup>
-                                    <FormLabel component="legend">tags to scrape:</FormLabel>
+                                    <FormLabel component="legend">tags to scrape: </FormLabel>
                                     {['h1', 'h2', 'h3', 'p', 'code', 'li', 'textarea', 'table', 'div'].map((tag) => (
                                         <FormControlLabel
                                             key={tag}

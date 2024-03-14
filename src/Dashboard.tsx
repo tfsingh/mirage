@@ -14,6 +14,7 @@ import axios from 'axios';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 
+
 interface Chat {
   model_name: string;
   model_id: number;
@@ -23,6 +24,12 @@ interface Message {
   text: string;
   timestamp: Date;
   isResponse: boolean;
+}
+
+interface SnackbarState {
+  open: boolean;
+  vertical: 'top' | 'bottom';
+  horizontal: 'left' | 'center' | 'right';
 }
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_ENDPOINT, import.meta.env.VITE_SUPABASE_KEY)
@@ -37,7 +44,7 @@ const Dashboard = () => {
   const [showConfig, setShowConfig] = useState(false);
   const [session, setSession] = useState(null)
   const [inferring, setInferring] = useState(false)
-  const [state, setState] = React.useState<State>({
+  const [state, setState] = React.useState<SnackbarState>({
     open: false,
     vertical: 'top',
     horizontal: 'center',
@@ -64,7 +71,7 @@ const Dashboard = () => {
           const response = await axios.get('/api/chats', { params: { userId: session.user.id } });
           setChats(response.data.reverse());
           setCurrentChat(response.data[0]?.model_id || null);
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error fetching chats:', error.message);
         }
       };
@@ -103,12 +110,12 @@ const Dashboard = () => {
     }
   }, [currentChat, session]);
 
-  const getSavedCurrentChat = (userId) => {
+  const getSavedCurrentChat = (userId: string) => {
     const savedCurrentChat = localStorage.getItem(`current_chat_${userId}`);
     return savedCurrentChat ? JSON.parse(savedCurrentChat) : chats[0]?.model_id || null;
   };
 
-  const getStoredMessages = (userId) => {
+  const getStoredMessages = (userId: string) => {
     const storedMessages = localStorage.getItem(`chat_messages_${userId}`);
     return storedMessages ? JSON.parse(storedMessages) : {};
   };
@@ -127,7 +134,7 @@ const Dashboard = () => {
       context = prevMessages.map(message => message.text)
     }
 
-    const updateMessages = (newMessages) => {
+    const updateMessages = (newMessages: React.SetStateAction<Record<number, Message[]>>) => {
       setMessages(newMessages);
       localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(newMessages));
     };
@@ -168,12 +175,12 @@ const Dashboard = () => {
 
   const handleClearChat = () => {
     if (!session) return;
-    const updatedMessages = { ...messages, [currentChat!]: [] };
+    const updatedMessages: React.SetStateAction<Record<number, Message[]>> = { ...messages, [currentChat!]: [] };
     setMessages(updatedMessages);
     localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(updatedMessages));
   };
 
-  const handleDeleteChat = async (modelId) => {
+  const handleDeleteChat = async (modelId: number) => {
     try {
       await axios.delete('/api/delete-chat', { params: { userId: session.user.id, modelId } });
       setChats(chats.filter((chat) => chat.model_id !== modelId));
@@ -231,7 +238,7 @@ const Dashboard = () => {
   if (showConfig) {
     return <>
       {gradient}
-      <Config supabase={supabase} session={session} refreshDash={refreshDash} />
+      <Config session={session} refreshDash={refreshDash} />
     </>;
   }
 
