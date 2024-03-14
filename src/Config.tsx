@@ -70,18 +70,30 @@ const Config = ({ supabase, session, refreshDash }) => {
             return;
         }
 
+        let tagsToSend = selectedTags;
+        let urlToSend = url;
+        let baseUrlToSend = baseUrl;
+
         if (selectedTags.length === 0) {
-            setSelectedTags(['p'])
+            tagsToSend = ['p']
+        }
+
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            urlToSend = 'https://' + url;
+        }
+
+        if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+            baseUrlToSend = 'https://' + baseUrl;
         }
 
         try {
             const response = await axios.post('/api/configure-chat', {
                 userId,
                 name,
-                url,
+                url: urlToSend,
                 depth,
-                selectedTags,
-                baseUrl,
+                selectedTags: tagsToSend,
+                baseUrl: baseUrlToSend,
                 ignoreFragments,
                 chunkPages
             });
@@ -91,7 +103,15 @@ const Config = ({ supabase, session, refreshDash }) => {
             }
         } catch (error) {
             console.error('There was an error:', error);
-            let messageToDisplay = error.response.status === 400 ? "Duplicate not allowed" : "Error configuring chat"
+            let messageToDisplay;
+            if (error.response && error.response.status === 400) {
+                console.log(error.response)
+                messageToDisplay = "Duplicate not allowed";
+            } else if (error.response && error.response.data && error.response.data != "Internal Server Error") {
+                messageToDisplay = error.response.data;
+            } else {
+                messageToDisplay = "Error configuring chat";
+            }
             setSnackbarMessage(messageToDisplay)
             setState({ ...state, open: true });
         }
@@ -110,7 +130,7 @@ const Config = ({ supabase, session, refreshDash }) => {
             <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                 <Box sx={{ backgroundColor: 'white', maxWidth: '600px', margin: '0 auto', width: 'auto', bgcolor: '#F2F1E9' }}>
                     <AppBar position="static" color="default" sx={{
-                        alignItems: 'center', justifyContent: 'center', width: '100%', bgcolor: '#9ab08f', height: '15%'
+                        alignItems: 'center', justifyContent: 'center', width: '100%', bgcolor: '#9ab08f', height: '13%'
                     }}>
                         <Typography variant="h6" gutterBottom sx={{ mt: 1.5, fontSize: '28px', color: '#3a4037' }}>
                             new chat
@@ -239,7 +259,7 @@ const Config = ({ supabase, session, refreshDash }) => {
                                         />
                                     </Tooltip>
 
-                                    {scraping ? <Box sx={{ mt: 1, color: '#3a4037' }}><LinearProgress color='inherit' /> </Box> : <Button type="submit" variant="contained" sx={{
+                                    {scraping ? <Box sx={{ mt: 1.5, color: '#3a4037' }}><LinearProgress color='inherit' /> </Box> : <Button type="submit" variant="contained" sx={{
                                         bgcolor: '#9ab08f',
                                         color: '#3a4037',
                                         textTransform: 'lowercase',

@@ -150,8 +150,8 @@ const Dashboard = () => {
       };
       updateMessages(updatedMessagesWithResponse);
     } catch (error) {
-      console.error('Error sending message:', error);
-      setSnackbarMessage("Error sending message");
+      console.error('Error generating response:', error);
+      setSnackbarMessage("Error generating response");
       setState((prevState) => ({ ...prevState, open: true }));
     }
 
@@ -198,8 +198,8 @@ const Dashboard = () => {
         position: 'fixed',
         top: 0,
         left: 0,
-        minWidth: '100vw',
-        minHeight: '100vh',
+        minWidth: '105vw',
+        minHeight: '105vh',
         display: 'flex',
         alignItems: 'stretch',
         justifyContent: 'stretch',
@@ -240,44 +240,71 @@ const Dashboard = () => {
 
       {gradient}
       <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column', m: 0 }}>
-        <AppBar position="static" sx={{ bgcolor: '#9ab08f', m: 0 }}>
+        <AppBar position="static" sx={{ bgcolor: '#9ab08f', m: 0, minHeight: '40px' }}>
           <Toolbar sx={{ m: 0, p: 0 }}>
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              m: 0,
+              mt: -1,
+              ml: -1,
+              pl: { xs: 1, sm: 0 },
+              overflowX: 'hidden'
+            }}>
+              <Typography variant="h6" noWrap component="div" sx={{
+                fontSize: { xs: '20px', sm: '28px' },
+                display: 'flex',
+                justifyContent: 'center',
+                color: '#3a4037'
+              }}>
+                mirage
+              </Typography>
+              <Typography variant="body2" noWrap component="div" sx={{
+                ml: -1,
+                mt: -1,
+                fontSize: '12px',
+                display: 'flex',
+                justifyContent: 'center',
+                color: '#3a4037',
+                pl: { xs: 3, sm: 0 }
+              }}>
+                chat with sites
+              </Typography>
+            </Box>
+
+
+
             <div style={{ flexGrow: 1 }}></div>
-
-            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontSize: '28px', display: 'flex', justifyContent: 'center', ml: '90px', color: '#3a4037' }}>
-              mirage
-            </Typography>
-
-            <div style={{ flexGrow: 1 }}></div>
-
-            {
-              session ? (
-                <>
-                  <IconButton onClick={handleClearChat}>
-                    <Tooltip title="clear chat" placement="top">
-                      <DeleteIcon />
-                    </Tooltip>
-                  </IconButton>
-                  <IconButton onClick={() => setShowConfig(true)}>
-                    <Tooltip title="new chat" placement="top">
-                      <AddIcon />
-                    </Tooltip>
-                  </IconButton>
-                  <IconButton onClick={() => handleSignOut()}>
-                    <Tooltip title="logout" placement="top">
-                      <LogoutIcon />
-                    </Tooltip>
-                  </IconButton>
-                </>
-              ) : (
-                <Auth
-                  supabaseClient={supabase}
-                  providers={['google']}
-                  appearance={{ theme: ThemeMinimal }}
-                  onlyThirdPartyProviders={true}
-                />
-              )
-            }
+            <Box sx={{ mr: { xs: 1, sm: -1.5 } }}>
+              {
+                session ? (
+                  <>
+                    <IconButton onClick={handleClearChat}>
+                      <Tooltip title="clear chat" placement="top">
+                        <DeleteIcon />
+                      </Tooltip>
+                    </IconButton>
+                    <IconButton onClick={() => setShowConfig(true)}>
+                      <Tooltip title="new chat" placement="top">
+                        <AddIcon />
+                      </Tooltip>
+                    </IconButton>
+                    <IconButton onClick={() => handleSignOut()}>
+                      <Tooltip title="logout" placement="top">
+                        <LogoutIcon />
+                      </Tooltip>
+                    </IconButton>
+                  </>
+                ) : (
+                  <Auth
+                    supabaseClient={supabase}
+                    providers={['google']}
+                    appearance={{ theme: ThemeMinimal }}
+                    onlyThirdPartyProviders={true}
+                  />
+                )
+              }
+            </Box>
 
 
           </Toolbar>
@@ -359,7 +386,7 @@ const Dashboard = () => {
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 placeholder="Type your message here..."
-                sx={{ mr: 1 }}
+                sx={{ mr: 1, ml: 1 }}
               />
               {inferring ? <CircularProgress color='inherit' /> : <IconButton color="primary" onClick={handleSendMessage}>
                 <SendIcon sx={{ color: 'grey' }} />
@@ -368,7 +395,7 @@ const Dashboard = () => {
           </Box>
         </Box>
       </Box>
-    </Container>
+    </Container >
   );
 };
 

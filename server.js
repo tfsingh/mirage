@@ -114,6 +114,20 @@ app.post('/api/configure-chat', async (req, res) => {
     chunkPages,
   } = req.body;
 
+  const cleanUp = async (modelData) => {
+    if (modelData) {
+      try {
+        await supabase
+          .from('models')
+          .delete()
+          .eq('model_id', modelData[0].model_id);
+      } catch (deleteError) {
+        console.error('Cleanup error:', deleteError);
+        return res.status(500).send('Failed to clean up after error');
+      }
+    }
+  };
+
   if (!userId || !name || !url || !depth || !selectedTags) {
     return res.status(400).send('Missing required fields');
   }
@@ -143,18 +157,19 @@ app.post('/api/configure-chat', async (req, res) => {
     return res.status(500).send('Error interacting with the database');
   }
 
-  try {
-    const scrapeRequestBody = {
-      url: url,
-      depth: parseInt(depth),
-      rules: {
-        must_start_with: baseUrl,
-        ignore_fragments: ignoreFragments,
-        valid_selectors: selectedTags,
-      },
-    };
+  const scrapeRequestBody = {
+    url: url,
+    depth: parseInt(depth),
+    rules: {
+      must_start_with: baseUrl,
+      ignore_fragments: ignoreFragments,
+      valid_selectors: selectedTags,
+    },
+  };
 
-    const scrapeData = await axios.post(
+  let scrapeData;
+  try {
+    scrapeData = await axios.post(
       process.env.SCRAPE_ENDPOINT,
       scrapeRequestBody,
       {
@@ -164,45 +179,45 @@ app.post('/api/configure-chat', async (req, res) => {
         },
       }
     );
+  } catch (scrapeError) {
+    await cleanUp(modelData);
+    console.error('Error in scraping:', scrapeError);
 
-    const initializeRequestBody = {
-      query: '',
-      data: scrapeData.data,
-      chunk_pages: chunkPages,
-      user_id: userId,
-      model_id: modelData[0].model_id,
-      inference: false,
-    };
+    return scrapeError.response.status === 404
+      ? res.status(404).send('Server down')
+      : res.status(500).send('Error in scraping (invalid url or timeout)');
+  }
 
-    try {
-      await axios.post(process.env.RAG_ENDPOINT, initializeRequestBody, {
-        headers: {
-          Authorization: `Bearer ${process.env.MIRAGE_AUTH_TOKEN_MODAL}`,
-          'Content-Type': 'application/json',
-        },
-      });
+  const initializeRequestBody = {
+    query: '',
+    data: scrapeData.data,
+    chunk_pages: chunkPages,
+    user_id: userId,
+    model_id: modelData[0].model_id,
+    inference: false,
+  };
 
-      res.send({ message: 'Chat configured successfully' });
-    } catch (initializeError) {
+  try {
+    await axios.post(process.env.RAG_ENDPOINT, initializeRequestBody, {
+      headers: {
+        Authorization: `Bearer ${process.env.MIRAGE_AUTH_TOKEN_MODAL}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    res.send({ message: 'Chat configured successfully' });
+  } catch (initializeError) {
+    await cleanUp(modelData);
+    if (initializeError.response && initializeError.response.data) {
+      const errorMessage =
+        initializeError.response.data.detail ||
+        'An error occurred during initialization';
+      console.error('Initialization error:', errorMessage);
+      return res.status(500).send(errorMessage);
+    } else {
       console.error('Initialization error:', initializeError);
-      throw new Error('Initialization failed');
+      return res.status(500).send('An error occurred during initialization');
     }
-  } catch (error) {
-    console.error('Error in /api/configure-chat:', error);
-
-    if (modelData) {
-      try {
-        await supabase
-          .from('models')
-          .delete()
-          .eq('model_id', modelData[0].model_id);
-      } catch (deleteError) {
-        console.error('Cleanup error:', deleteError);
-        return res.status(500).send('Failed to clean up after error');
-      }
-    }
-
-    res.status(500).send('Internal Server Error');
   }
 });
 

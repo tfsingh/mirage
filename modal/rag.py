@@ -62,7 +62,7 @@ class RAG:
         if data_size < 500 and not item['inference']:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Size of data too small (< 500b)",
+                detail="Size of data too small (<500b)",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -97,7 +97,7 @@ class RAG:
         if not docs:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Issue loading data from volume",
+                detail="Issue loading data",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
