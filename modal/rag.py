@@ -101,7 +101,7 @@ class RAG:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        k = min(3, len(docs))
+        k = min(5, len(docs))
 
         search_results = self.model.rerank(
             query=item['query'], documents=docs, k=k

@@ -39,7 +39,7 @@ app.get('/api/chats', async (req, res) => {
 });
 
 app.post('/api/send-message', async (req, res) => {
-  const { userId, currentChat, userMessage, modelId } = req.body;
+  const { userId, currentChat, userMessage, context, modelId } = req.body;
 
   if (!userId || currentChat === null || !userMessage || !modelId) {
     return res.status(400).send('Missing required fields');
@@ -65,9 +65,11 @@ app.post('/api/send-message', async (req, res) => {
       await supabase.from('rate_limit').insert([{ user_id: userId, count: 1 }]);
     }
 
+    let query = context.join(' ') + ' ' + userMessage;
+
     const rag_endpoint = process.env.RAG_ENDPOINT;
     const inferenceRequestBody = {
-      query: userMessage,
+      query,
       data: '',
       chunk_pages: false,
       user_id: userId,
@@ -89,10 +91,11 @@ app.post('/api/send-message', async (req, res) => {
           role: 'system',
           content: `Given the following results ${JSON.stringify(
             rag_results.data
-          )} and the following query ${userMessage}, return the best informed response.`,
+          )} and the following query ${userMessage}, with the previous queries sent by the user being ${context}, return the best informed response to the current query with no formatting. 
+          Stick to the data as much as possible but interpret where necessary.`,
         },
       ],
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4-turbo-preview',
     });
 
     res.json({ response: completion.choices[0].message.content });

@@ -121,6 +121,12 @@ const Dashboard = () => {
     const timestamp = new Date();
     const newMessage = { text: currentMessage, timestamp, isResponse: false };
 
+    let context: string[] = []
+    if (messages[currentChat]) {
+      const prevMessages = messages[currentChat].filter(message => !message.isResponse).slice(-3);
+      context = prevMessages.map(message => message.text)
+    }
+
     const updateMessages = (newMessages) => {
       setMessages(newMessages);
       localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(newMessages));
@@ -140,6 +146,7 @@ const Dashboard = () => {
         userId: session.user.id,
         currentChat,
         userMessage: currentMessage,
+        context,
         modelId: chats.find(chat => chat.model_id === currentChat)?.model_id,
       });
 
@@ -280,7 +287,7 @@ const Dashboard = () => {
                 session ? (
                   <>
                     <IconButton onClick={handleClearChat}>
-                      <Tooltip title="clear chat" placement="top">
+                      <Tooltip title="clear chat/context" placement="top">
                         <DeleteIcon />
                       </Tooltip>
                     </IconButton>
@@ -386,7 +393,7 @@ const Dashboard = () => {
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 placeholder="Type your message here..."
-                sx={{ mr: 1, ml: 1 }}
+                sx={{ mr: 1, ml: 1, mb: 1 }}
               />
               {inferring ? <CircularProgress color='inherit' /> : <IconButton color="primary" onClick={handleSendMessage}>
                 <SendIcon sx={{ color: 'grey' }} />
