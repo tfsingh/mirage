@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar, Typography, IconButton, Container, Tooltip, Button } from '@mui/material';
+import { Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar, Typography, IconButton, Container, Tooltip, CircularProgress } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [messages, setMessages] = useState<Record<number, Message[]>>({});
   const [showConfig, setShowConfig] = useState(false);
   const [session, setSession] = useState(null)
+  const [inferring, setInferring] = useState(false)
   const [state, setState] = React.useState<State>({
     open: false,
     vertical: 'top',
@@ -54,6 +55,7 @@ const Dashboard = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       const fetchChats = async () => {
+        console.log("getting chats")
         try {
           const response = await axios.get('/api/chats', { params: { userId: session.user.id } });
           setChats(response.data);
@@ -81,7 +83,7 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
 
-  }, []);
+  }, [showConfig]);
 
   useEffect(() => {
     if (messagesContainerRef.current) {
@@ -125,6 +127,8 @@ const Dashboard = () => {
     updateMessages(updatedMessages);
     setCurrentMessage('');
 
+    setInferring(true);
+
     try {
       const { data: { response } } = await axios.post('/api/send-message', {
         userId: session.user.id,
@@ -144,6 +148,8 @@ const Dashboard = () => {
       setSnackbarMessage("Error sending message");
       setState((prevState) => ({ ...prevState, open: true }));
     }
+
+    setInferring(false);
   };
 
 
@@ -158,6 +164,11 @@ const Dashboard = () => {
     await supabase.auth.signOut();
     setSession(null);
   };
+
+  const refreshDash = () => {
+    setShowConfig(false);
+    //window.location.reload();
+  }
 
   const gradient = (
     <Container
@@ -191,7 +202,7 @@ const Dashboard = () => {
   if (showConfig) {
     return <>
       {gradient}
-      <Config supabase={supabase} session={session} />
+      <Config supabase={supabase} session={session} refreshDash={refreshDash} />
     </>;
   }
 
@@ -275,7 +286,7 @@ const Dashboard = () => {
               ))}
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', p: 1, bgcolor: '#F2F1E9' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', p: 1, bgcolor: '#F2F1E9', color: 'grey' }}>
               <TextField
                 fullWidth
                 variant="outlined"
@@ -284,9 +295,9 @@ const Dashboard = () => {
                 placeholder="Type your message here..."
                 sx={{ mr: 1 }}
               />
-              <IconButton color="primary" onClick={handleSendMessage}>
+              {inferring ? <CircularProgress color='inherit' /> : <IconButton color="primary" onClick={handleSendMessage}>
                 <SendIcon sx={{ color: 'grey' }} />
-              </IconButton>
+              </IconButton>}
             </Box>
           </Box>
         </Box>

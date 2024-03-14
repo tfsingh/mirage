@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip, Container } from '@mui/material';
+import { AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip, Container, LinearProgress } from '@mui/material';
 import './App.css';
 import Snackbar, { SnackbarOrigin } from '@mui/material/Snackbar';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 
-const Config = ({ supabase, session }) => {
+const Config = ({ supabase, session, refreshDash }) => {
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [baseUrl, setBaseUrl] = useState('');
     const [ignoreFragments, setIgnoreFragments] = useState(false);
     const [chunkPages, setChunkPages] = useState(false);
+    const [scraping, setScraping] = useState(false);
     const [depth, setDepth] = useState('1');
     const [state, setState] = React.useState<State>({
         open: false,
@@ -60,10 +61,12 @@ const Config = ({ supabase, session }) => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+        setScraping(true);
         const userId = session.user.id;
 
         if (userId === "" || name === "" || url === "" || depth === null) {
             console.error("Required data not present");
+            setScraping(false);
             return;
         }
 
@@ -84,8 +87,7 @@ const Config = ({ supabase, session }) => {
             });
 
             if (response.data && response.data.message) {
-                console.log(response.data.message);
-
+                refreshDash()
             }
         } catch (error) {
             console.error('There was an error:', error);
@@ -93,6 +95,7 @@ const Config = ({ supabase, session }) => {
             setSnackbarMessage(messageToDisplay)
             setState({ ...state, open: true });
         }
+        setScraping(false);
     };
 
     return (
@@ -236,7 +239,7 @@ const Config = ({ supabase, session }) => {
                                         />
                                     </Tooltip>
 
-                                    <Button type="submit" variant="contained" sx={{
+                                    {scraping ? <Box sx={{ mt: 1, color: '#3a4037' }}><LinearProgress color='inherit' /> </Box> : <Button type="submit" variant="contained" sx={{
                                         bgcolor: '#9ab08f',
                                         color: '#3a4037',
                                         textTransform: 'lowercase',
@@ -247,7 +250,7 @@ const Config = ({ supabase, session }) => {
                                         }
                                     }}>
                                         submit
-                                    </Button>
+                                    </Button>}
                                 </FormControl>
                             </Box>
 

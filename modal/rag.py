@@ -59,10 +59,10 @@ class RAG:
 
         data_size = asizeof.asizeof(data)
 
-        if data_size < 1000 and not item['inference']:
+        if data_size < 100 and not item['inference']:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Size of data too small (< 1kb)",
+                detail="Size of data too small (< 100b)",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
