@@ -33,6 +33,7 @@ interface SnackbarState {
 }
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_ENDPOINT, import.meta.env.VITE_SUPABASE_KEY)
+const endpoint = import.meta.env.VITE_BACKEND_ENDPOINT
 
 const Dashboard = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -64,7 +65,7 @@ const Dashboard = () => {
       setSession(session)
       const fetchChats = async () => {
         try {
-          const response = await axios.get('/api/chats', { params: { userId: session.user.id } });
+          const response = await axios.get(endpoint + '/api/chats', { params: { userId: session.user.id } });
           setChats(response.data.reverse());
           setCurrentChat(response.data[0]?.model_id || null);
         } catch (error: any) {
@@ -116,8 +117,6 @@ const Dashboard = () => {
     return storedMessages ? JSON.parse(storedMessages) : {};
   };
 
-
-
   const handleSendMessage = async () => {
     if (!session || currentChat === null) return;
 
@@ -145,7 +144,7 @@ const Dashboard = () => {
     setInferring(true);
 
     try {
-      const { data: { response } } = await axios.post('/api/send-message', {
+      const { data: { response } } = await axios.post(endpoint + '/api/send-message', {
         userId: session.user.id,
         currentChat,
         userMessage: currentMessage,
@@ -159,9 +158,10 @@ const Dashboard = () => {
         [currentChat]: [...updatedMessages[currentChat], responseMessage],
       };
       updateMessages(updatedMessagesWithResponse);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating response:', error);
-      setSnackbarMessage("Error generating response");
+      const messageToDisplay = error.response.status === 429 ? "Rate limit reached" : "Error generating response";
+      setSnackbarMessage(messageToDisplay);
       setState((prevState) => ({ ...prevState, open: true }));
     }
 
@@ -178,7 +178,7 @@ const Dashboard = () => {
 
   const handleDeleteChat = async (modelId: number) => {
     try {
-      await axios.delete('/api/delete-chat', { params: { userId: session.user.id, modelId } });
+      await axios.delete(endpoint + '/api/delete-chat', { params: { userId: session.user.id, modelId } });
       setChats(chats.filter((chat) => chat.model_id !== modelId));
       setMessages((prevMessages) => {
         const updatedMessages = { ...prevMessages };

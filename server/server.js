@@ -4,14 +4,16 @@ import axios from 'axios';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import path from 'path';
+import cors from 'cors';
 
 dotenv.config();
 
 const __dirname = path.resolve();
 const app = express();
 const PORT = process.env.PORT || 3000;
-const RATE_LIMIT = 500;
+const RATE_LIMIT = 30;
 
+app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
@@ -40,6 +42,32 @@ app.get('/api/chats', async (req, res) => {
   }
 });
 
+const rateLimit = async (userId, res) => {
+  let { data: existingData } = await supabase
+    .from('rate_limit')
+    .select('count')
+    .eq('user_id', userId)
+    .single();
+
+  if (existingData && existingData.count >= RATE_LIMIT) {
+    res.status(429).send('Rate limit reached');
+    throw Error();
+  }
+
+  if (existingData) {
+    await supabase
+      .from('rate_limit')
+      .update({ count: existingData.count + 1 })
+      .eq('user_id', userId);
+  } else {
+    let { error } = await supabase
+      .from('rate_limit')
+      .insert([{ user_id: userId, count: 1 }]);
+    res.status(401).send('User not authorized');
+    throw Error();
+  }
+};
+
 app.post('/api/send-message', async (req, res) => {
   const { userId, currentChat, userMessage, context, modelId } = req.body;
 
@@ -48,25 +76,12 @@ app.post('/api/send-message', async (req, res) => {
   }
 
   try {
-    let { data: existingData } = await supabase
-      .from('rate_limit')
-      .select('count')
-      .eq('user_id', userId)
-      .single();
+    await rateLimit(userId, res);
+  } catch (error) {
+    return;
+  }
 
-    if (existingData && existingData.count >= RATE_LIMIT) {
-      return res.status(429).send('Rate limit reached');
-    }
-
-    if (existingData) {
-      await supabase
-        .from('rate_limit')
-        .update({ count: existingData.count + 1 })
-        .eq('user_id', userId);
-    } else {
-      await supabase.from('rate_limit').insert([{ user_id: userId, count: 1 }]);
-    }
-
+  try {
     let query = context.join(' ') + ' ' + userMessage;
 
     const rag_endpoint = process.env.RAG_ENDPOINT;
@@ -135,6 +150,12 @@ app.post('/api/configure-chat', async (req, res) => {
 
   if (!userId || !name || !url || !depth || !selectedTags) {
     return res.status(400).send('Missing required fields');
+  }
+
+  try {
+    await rateLimit(userId, res);
+  } catch (error) {
+    return;
   }
 
   let modelData;

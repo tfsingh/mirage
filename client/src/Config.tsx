@@ -15,6 +15,8 @@ interface ConfigProps {
     refreshDash: any;
 }
 
+const endpoint = import.meta.env.VITE_BACKEND_ENDPOINT
+
 const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');
@@ -92,7 +94,7 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
         }
 
         try {
-            const response = await axios.post('/api/configure-chat', {
+            const response = await axios.post(endpoint + '/api/configure-chat', {
                 userId,
                 name,
                 url: urlToSend,
@@ -110,13 +112,15 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
             console.error('There was an error:', error);
             let messageToDisplay;
             if (error.response && error.response.status === 400) {
-                console.log(error.response)
                 messageToDisplay = "Duplicate not allowed";
             } else if (error.response && error.response.data && error.response.data != "Internal Server Error") {
+                console.log(error.response.data)
                 messageToDisplay = error.response.data;
             } else {
                 messageToDisplay = "Error configuring chat";
             }
+            console.log(snackbarMessage)
+
             setSnackbarMessage(messageToDisplay)
             setState({ ...state, open: true });
         }
