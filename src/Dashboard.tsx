@@ -11,6 +11,8 @@ import { Auth } from '@supabase/auth-ui-react'
 import { ThemeMinimal } from '@supabase/auth-ui-shared'
 import Snackbar, { SnackbarOrigin } from '@mui/material/Snackbar';
 import axios from 'axios';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 
 interface Chat {
   model_name: string;
@@ -41,6 +43,8 @@ const Dashboard = () => {
     horizontal: 'center',
   });
   const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [chatToDelete, setChatToDelete] = useState(null);
 
   const { vertical, horizontal, open } = state;
 
@@ -162,6 +166,23 @@ const Dashboard = () => {
     localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(updatedMessages));
   };
 
+  const handleDeleteChat = async (modelId) => {
+    try {
+      await axios.delete('/api/delete-chat', { params: { userId: session.user.id, modelId } });
+      setChats(chats.filter((chat) => chat.model_id !== modelId));
+      setMessages((prevMessages) => {
+        const updatedMessages = { ...prevMessages };
+        delete updatedMessages[modelId];
+        return updatedMessages;
+      });
+      setAnchorEl(null);
+      setChatToDelete(null);
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      setSnackbarMessage('Error deleting chat');
+      setState((prevState) => ({ ...prevState, open: true }));
+    }
+  };
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -169,7 +190,6 @@ const Dashboard = () => {
 
   const refreshDash = () => {
     setShowConfig(false);
-    //window.location.reload();
   }
 
   const gradient = (
@@ -217,6 +237,7 @@ const Dashboard = () => {
         message={snackbarMessage}
         key={vertical + horizontal}
       />
+
       {gradient}
       <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column', m: 0 }}>
         <AppBar position="static" sx={{ bgcolor: '#9ab08f', m: 0 }}>
@@ -269,13 +290,47 @@ const Dashboard = () => {
                 button
                 key={chat.model_id}
                 onClick={() => setCurrentChat(chat.model_id)}
-                sx={{ bgcolor: currentChat === chat.model_id ? 'rgba(0, 0, 0, 0.1)' : 'inherit' }}
+                sx={{
+                  bgcolor: currentChat === chat.model_id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setAnchorEl(e.currentTarget);
+                  setChatToDelete(chat.model_id);
+                }}
               >
                 <ListItemText primary={chat.model_name} />
               </ListItem>
             ))}
           </List>
-
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={() => {
+              setAnchorEl(null);
+              setChatToDelete(null);
+            }}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            sx={{
+              '& .MuiPaper-root': {
+                backgroundColor: '#BCC6BC',
+                boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.2)',
+                padding: '0',
+                minWidth: 'auto',
+                maxHeight: '35px',
+                overflowY: 'hidden',
+              },
+            }}
+          >
+            <MenuItem onClick={() => handleDeleteChat(chatToDelete)}>delete chat</MenuItem>
+          </Menu>
           <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
             <Box
               sx={{ flexGrow: 1, overflow: 'auto', p: 3, bgcolor: '#F2F1E9', whiteSpace: 'pre-wrap', wordBreak: 'break-word', mb: -3, mt: -1 }}

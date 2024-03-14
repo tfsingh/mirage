@@ -206,6 +206,28 @@ app.post('/api/configure-chat', async (req, res) => {
   }
 });
 
+app.delete('/api/delete-chat', async (req, res) => {
+  const { userId, modelId } = req.query;
+
+  try {
+    const { error } = await supabase
+      .from('models')
+      .delete()
+      .eq('user_id', userId)
+      .eq('model_id', modelId);
+
+    if (error) {
+      console.error('Error deleting chat:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.error('Error deleting chat:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
