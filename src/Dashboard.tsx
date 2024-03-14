@@ -55,10 +55,10 @@ const Dashboard = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       const fetchChats = async () => {
-        console.log("getting chats")
         try {
           const response = await axios.get('/api/chats', { params: { userId: session.user.id } });
-          setChats(response.data);
+          setChats(response.data.reverse());
+          setCurrentChat(response.data[0]?.model_id || null);
         } catch (error) {
           console.error('Error fetching chats:', error.message);
         }
