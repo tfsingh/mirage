@@ -69,9 +69,10 @@ app.post('/api/send-message', async (req, res) => {
     const inferenceRequestBody = {
       query: userMessage,
       data: '',
-      chunked: true,
+      chunk_pages: false,
       user_id: userId,
       model_id: modelId,
+      inference: true,
       k: 3,
     };
 
@@ -102,8 +103,16 @@ app.post('/api/send-message', async (req, res) => {
 });
 
 app.post('/api/configure-chat', async (req, res) => {
-  const { userId, name, url, depth, selectedTags, baseUrl, ignoreFragments } =
-    req.body;
+  const {
+    userId,
+    name,
+    url,
+    depth,
+    selectedTags,
+    baseUrl,
+    ignoreFragments,
+    chunkPages,
+  } = req.body;
 
   if (!userId || !name || !url || !depth || !selectedTags) {
     return res.status(400).send('Missing required fields');
@@ -133,7 +142,6 @@ app.post('/api/configure-chat', async (req, res) => {
     console.error('Supabase insertion error:', error);
     return res.status(500).send('Error interacting with the database');
   }
-  console.log(selectedTags);
 
   try {
     const scrapeRequestBody = {
@@ -156,13 +164,14 @@ app.post('/api/configure-chat', async (req, res) => {
         },
       }
     );
-    console.log('data', scrapeData.data);
+
     const initializeRequestBody = {
       query: '',
       data: scrapeData.data,
-      chunked: true,
+      chunk_pages: chunkPages,
       user_id: userId,
       model_id: modelData[0].model_id,
+      inference: false,
     };
 
     try {

@@ -12,6 +12,7 @@ const Config = ({ supabase, session }) => {
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [baseUrl, setBaseUrl] = useState('');
     const [ignoreFragments, setIgnoreFragments] = useState(false);
+    const [chunkPages, setChunkPages] = useState(false);
     const [depth, setDepth] = useState('1');
     const [state, setState] = React.useState<State>({
         open: false,
@@ -49,6 +50,10 @@ const Config = ({ supabase, session }) => {
         setIgnoreFragments(!ignoreFragments);
     };
 
+    const handleChunkPagesChange = () => {
+        setChunkPages(!chunkPages);
+    };
+
     const handleDepthChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setDepth(event.target.value);
     };
@@ -75,6 +80,7 @@ const Config = ({ supabase, session }) => {
                 selectedTags,
                 baseUrl,
                 ignoreFragments,
+                chunkPages
             });
 
             if (response.data && response.data.message) {
@@ -187,11 +193,48 @@ const Config = ({ supabase, session }) => {
                                             sx={{ mb: 0.5 }}
                                         />
                                     </Tooltip>
-                                    <FormControlLabel
-                                        control={<Checkbox size="small" checked={ignoreFragments} onChange={handleIgnoreFragmentsChange} />}
-                                        label="ignore fragments"
-                                        sx={{ mb: 0.5 }}
-                                    />
+                                    <Tooltip
+                                        title="ignore in page links (url#section)"
+                                        placement="left"
+                                        PopperProps={{
+                                            modifiers: [
+                                                {
+                                                    name: 'offset',
+                                                    options: {
+                                                        offset: [0, -22],
+                                                    },
+                                                },
+                                            ],
+                                        }}
+                                    >
+                                        <FormControlLabel
+                                            control={<Checkbox size="small" checked={ignoreFragments} onChange={handleIgnoreFragmentsChange} />}
+                                            label="ignore fragments"
+                                            sx={{ mb: -1 }}
+                                        />
+                                    </Tooltip>
+
+
+                                    <Tooltip
+                                        title="divide pages into smaller chunks for indexing"
+                                        placement="left"
+                                        PopperProps={{
+                                            modifiers: [
+                                                {
+                                                    name: 'offset',
+                                                    options: {
+                                                        offset: [0, -22],
+                                                    },
+                                                },
+                                            ],
+                                        }}
+                                    >
+                                        <FormControlLabel
+                                            control={<Checkbox size="small" checked={chunkPages} onChange={handleChunkPagesChange} />}
+                                            label="chunk pages"
+                                            sx={{ mb: 0.5 }}
+                                        />
+                                    </Tooltip>
 
                                     <Button type="submit" variant="contained" sx={{
                                         bgcolor: '#9ab08f',

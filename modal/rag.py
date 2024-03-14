@@ -57,8 +57,14 @@ class RAG:
         user_id = item['user_id']
         model_id = item['model_id']
 
-        # for inference, data is always chunked
-        data = data if item['chunked'] else text_splitter.split_text(data)
+        data_size = asizeof.asizeof(data)
+
+        if data_size < 1000 and not item['inference']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Size of data too small (< 1kb)",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
         if asizeof.asizeof(data) > 1_500_000:
             raise HTTPException(
@@ -68,6 +74,9 @@ class RAG:
             )
 
         text_splitter = NLTKTextSplitter(chunk_size=256)
+
+        if not item['inference'] and item['chunk_pages']:
+            data = [text for item in data for text in text_splitter.split_text(item)]
 
         file_path = f"/data/{user_id}-{model_id}.json"
         volume.reload()
@@ -96,6 +105,8 @@ class RAG:
         search_results = self.model.rerank(
             query=item['query'], documents=docs, k=k
         )
+
+        #print(search_results)
 
         return [result["content"] for result in search_results]
 
