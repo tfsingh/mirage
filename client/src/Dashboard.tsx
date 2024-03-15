@@ -283,8 +283,8 @@ const Dashboard = () => {
               flexDirection: 'column',
               m: 0,
               mt: -1,
-              ml: -1,
-              pl: { xs: 1, sm: 0 },
+              ml: -2,
+              pl: { xs: 0, sm: 0 },
               overflowX: 'hidden'
             }}>
               <Typography variant="h6" noWrap component="div" sx={{
@@ -296,7 +296,7 @@ const Dashboard = () => {
                 mirage
               </Typography>
               <Typography variant="body2" noWrap component="div" sx={{
-                ml: -1,
+                ml: 1,
                 mt: -1,
                 fontSize: '12px',
                 display: 'flex',
@@ -304,7 +304,7 @@ const Dashboard = () => {
                 color: '#3a4037',
                 pl: { xs: 3, sm: 0 }
               }}>
-                chat with sites
+                chat with the web
               </Typography>
             </Box>
 
