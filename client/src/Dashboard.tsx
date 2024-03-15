@@ -69,7 +69,7 @@ const Dashboard = () => {
           setChats(response.data.reverse());
           setCurrentChat(response.data[0]?.model_id || null);
         } catch (error: any) {
-          console.error('Error fetching chats:', error.message);
+          // console.error('Error fetching chats:', error.message);
         }
       };
       setCurrentChat(getSavedCurrentChat(session.user.id));
@@ -120,6 +120,12 @@ const Dashboard = () => {
   const handleSendMessage = async () => {
     if (!session || currentChat === null) return;
 
+    if (currentMessage === '') {
+      setSnackbarMessage("Please enter a query");
+      setState((prevState) => ({ ...prevState, open: true }));
+      return
+    }
+
     const timestamp = new Date();
     const newMessage = { text: currentMessage, timestamp, isResponse: false };
 
@@ -159,7 +165,7 @@ const Dashboard = () => {
       };
       updateMessages(updatedMessagesWithResponse);
     } catch (error: any) {
-      console.error('Error generating response:', error);
+      // console.error('Error generating response:', error);
       const messageToDisplay = error.response.status === 429 ? "Rate limit reached" : "Error generating response";
       setSnackbarMessage(messageToDisplay);
       setState((prevState) => ({ ...prevState, open: true }));
@@ -188,7 +194,7 @@ const Dashboard = () => {
       setAnchorEl(null);
       setChatToDelete(null);
     } catch (error) {
-      console.error('Error deleting chat:', error);
+      // console.error('Error deleting chat:', error);
       setSnackbarMessage('Error deleting chat');
       setState((prevState) => ({ ...prevState, open: true }));
     }
@@ -398,6 +404,12 @@ const Dashboard = () => {
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 placeholder="Type your message here..."
                 sx={{ mr: 1, ml: 1, mb: 1 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
               />
               {inferring ? <CircularProgress color='inherit' /> : <IconButton color="primary" onClick={handleSendMessage}>
                 <SendIcon sx={{ color: 'grey' }} />

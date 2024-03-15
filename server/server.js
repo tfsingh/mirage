@@ -49,7 +49,7 @@ const rateLimit = async (userId, res) => {
     .eq('user_id', userId)
     .single();
 
-  if (existingData && existingData.count >= RATE_LIMIT) {
+  if (existingData && existingData.count > RATE_LIMIT) {
     res.status(429).send('Rate limit reached');
     throw Error();
   }

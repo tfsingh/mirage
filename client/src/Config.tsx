@@ -72,7 +72,7 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
         const userId = session.user.id;
 
         if (userId === "" || name === "" || url === "" || depth === null) {
-            console.error("Required data not present");
+            // console.error("Required data not present");
             setScraping(false);
             return;
         }
@@ -109,18 +109,15 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
                 refreshDash()
             }
         } catch (error: any) {
-            console.error('There was an error:', error);
+            // console.error('There was an error:', error);
             let messageToDisplay;
             if (error.response && error.response.status === 400) {
-                messageToDisplay = "Duplicate not allowed";
+                messageToDisplay = "Duplicate chat name not allowed";
             } else if (error.response && error.response.data && error.response.data != "Internal Server Error") {
-                console.log(error.response.data)
                 messageToDisplay = error.response.data;
             } else {
                 messageToDisplay = "Error configuring chat";
             }
-            console.log(snackbarMessage)
-
             setSnackbarMessage(messageToDisplay)
             setState({ ...state, open: true });
         }
@@ -286,7 +283,7 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
                             <Box sx={{ backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', p: 1, bgcolor: '#F2F1E9' }}>
                                 <FormGroup>
                                     <FormLabel component="legend">tags to scrape: </FormLabel>
-                                    {['h1', 'h2', 'h3', 'p', 'code', 'li', 'textarea', 'table', 'div'].map((tag) => (
+                                    {['h1', 'h2', 'h3', 'p', 'code', 'textarea', 'li', 'table'].map((tag) => (
                                         <FormControlLabel
                                             key={tag}
                                             control={<Checkbox size="small" value={tag} checked={selectedTags.includes(tag)} onChange={handleTagChange} />}
