@@ -62,7 +62,7 @@ class RAG:
         if data_size < 500 and not item['inference']:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Size of data too small (<500b)",
+                detail="Size of data too small, check url",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 

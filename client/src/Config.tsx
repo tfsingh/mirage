@@ -68,14 +68,19 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
 
     const handleSubmit = async (event: any) => {
         event.preventDefault();
-        setScraping(true);
         const userId = session.user.id;
 
         if (userId === "" || name === "" || url === "" || depth === null) {
-            // console.error("Required data not present");
-            setScraping(false);
             return;
         }
+
+        if (baseUrl !== "" && !url.startsWith(baseUrl)) {
+            setSnackbarMessage("url must start with given base url")
+            setState({ ...state, open: true });
+            return
+        }
+
+        setScraping(true);
 
         let tagsToSend = selectedTags;
         let urlToSend = url;
@@ -89,7 +94,7 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
             urlToSend = 'https://' + url;
         }
 
-        if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+        if (baseUrl !== "" && !baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
             baseUrlToSend = 'https://' + baseUrl;
         }
 
@@ -109,7 +114,7 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
                 refreshDash()
             }
         } catch (error: any) {
-            // console.error('There was an error:', error);
+            console.error('There was an error:', error);
             let messageToDisplay;
             if (error.response && error.response.status === 400) {
                 messageToDisplay = "duplicate chat name not allowed";

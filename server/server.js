@@ -49,7 +49,7 @@ const rateLimit = async (userId, res) => {
     .eq('user_id', userId)
     .single();
 
-  if (existingData && existingData.count > RATE_LIMIT) {
+  if (existingData && existingData.count >= RATE_LIMIT) {
     res.status(429).send('Rate limit reached');
     throw Error();
   }
@@ -63,8 +63,10 @@ const rateLimit = async (userId, res) => {
     let { error } = await supabase
       .from('rate_limit')
       .insert([{ user_id: userId, count: 1 }]);
-    res.status(401).send('User not authorized');
-    throw Error();
+    if (error) {
+      res.status(401).send('user not authorized');
+      throw Error();
+    }
   }
 };
 
@@ -211,7 +213,9 @@ app.post('/api/configure-chat', async (req, res) => {
 
     return scrapeError.response.status === 404
       ? res.status(404).send('Server down')
-      : res.status(500).send('Error in scraping (invalid url or timeout)');
+      : res
+          .status(500)
+          .send('Error in scraping (potential timeout, decrease depth)');
   }
 
   const initializeRequestBody = {
