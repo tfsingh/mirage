@@ -213,7 +213,7 @@ const Dashboard = () => {
       setDataDialogOpen(true);
 
     } catch (error) {
-      setSnackbarMessage('Error getting data');
+      setSnackbarMessage('error getting data');
       setState((prevState) => ({ ...prevState, open: true }));
     }
   };
