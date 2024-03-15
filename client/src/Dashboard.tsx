@@ -1,21 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar, Typography, IconButton, Container, Tooltip, CircularProgress } from '@mui/material';
+import Config from './Config';
+import { MeshGradientRenderer } from '@johnn-e/react-mesh-gradient';
+import { createClient } from '@supabase/supabase-js'
+import { Auth } from '@supabase/auth-ui-react'
+import { ThemeMinimal } from '@supabase/auth-ui-shared'
+import axios from 'axios';
+import {
+  Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar,
+  Typography, IconButton, Container, Tooltip, CircularProgress
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
 import LogoutIcon from '@mui/icons-material/Logout';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import Config from './Config';
-import { MeshGradientRenderer } from '@johnn-e/react-mesh-gradient';
-import { createClient } from '@supabase/supabase-js'
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeMinimal } from '@supabase/auth-ui-shared'
 import Snackbar from '@mui/material/Snackbar';
-import axios from 'axios';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-
 
 interface Chat {
   model_name: string;
@@ -40,30 +42,139 @@ const endpoint = import.meta.env.VITE_BACKEND_ENDPOINT
 const Dashboard = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // user
+  const [session, setSession] = useState(null)
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+  };
+
+  // chat interface
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChat, setCurrentChat] = useState<number | null>(null);
   const [currentMessage, setCurrentMessage] = useState('');
   const [messages, setMessages] = useState<Record<number, Message[]>>({});
   const [showConfig, setShowConfig] = useState(false);
-  const [session, setSession] = useState(null)
-  const [inferring, setInferring] = useState(false)
+  const [inferring, setInferring] = useState(false);
+
+  const handleClearChat = () => {
+    if (!session) return;
+    const updatedMessages: React.SetStateAction<Record<number, Message[]>> = { ...messages, [currentChat!]: [] };
+    setMessages(updatedMessages);
+    localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(updatedMessages));
+  };
+
+  const refreshDash = () => {
+    setShowConfig(false);
+  }
+
+  const handleSendMessage = async () => {
+    if (!session || currentChat === null) return;
+
+    if (currentMessage === '') {
+      showSnackbar("please enter a query")
+      return
+    }
+
+    const timestamp = new Date();
+    const newMessage = { text: currentMessage, timestamp, isResponse: false };
+
+    let context: string[] = []
+    if (messages[currentChat]) {
+      const prevMessages = messages[currentChat].filter(message => !message.isResponse).slice(-3);
+      context = prevMessages.map(message => message.text)
+    }
+
+    const updateMessages = (newMessages: React.SetStateAction<Record<number, Message[]>>) => {
+      setMessages(newMessages);
+      localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(newMessages));
+    };
+
+    const updatedMessages = {
+      ...messages,
+      [currentChat]: [...(messages[currentChat] || []), newMessage],
+    };
+    updateMessages(updatedMessages);
+    setCurrentMessage('');
+    setInferring(true);
+
+    try {
+      const { data: { response } } = await axios.post(endpoint + '/api/send-message', {
+        userId: session.user.id,
+        currentChat,
+        userMessage: currentMessage,
+        context,
+        modelId: chats.find(chat => chat.model_id === currentChat)?.model_id,
+      });
+
+      const responseMessage = { text: response, timestamp, isResponse: true };
+      const updatedMessagesWithResponse = {
+        ...updatedMessages,
+        [currentChat]: [...updatedMessages[currentChat], responseMessage],
+      };
+      updateMessages(updatedMessagesWithResponse);
+    } catch (error: any) {
+      const messageToDisplay = error.response.status === 429 ? "rate limit reached" : "error generating response";
+      showSnackbar(messageToDisplay)
+    }
+
+    setInferring(false);
+  };
+
+  // menu
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [chatFromMenu, setChatFromMenu] = useState(null);
+  const [dataDialogOpen, setDataDialogOpen] = useState(false);
+  const [dataToShow, setDataToShow] = useState('');
+
+  const handleDeleteChat = async (modelId: number) => {
+    try {
+      await axios.delete(endpoint + '/api/delete-chat', { params: { userId: session.user.id, modelId } });
+      setChats(chats.filter((chat) => chat.model_id !== modelId));
+      setMessages((prevMessages) => {
+        const updatedMessages = { ...prevMessages };
+        delete updatedMessages[modelId];
+        return updatedMessages;
+      });
+      setAnchorEl(null);
+      setChatFromMenu(null);
+    } catch (error) {
+      showSnackbar('error deleting chat')
+    }
+  };
+
+  const handleSeeData = async (modelId: number) => {
+    try {
+      setAnchorEl(null);
+      setChatFromMenu(null);
+      const data = await axios.get(endpoint + '/api/get-data', { params: { userId: session.user.id, modelId } });
+      setDataToShow(data.data.join('\n------------------------------\n'));
+      setDataDialogOpen(true);
+    } catch (error) {
+      showSnackbar('error getting data')
+    }
+  };
+
+  // snackbar
   const [state, setState] = React.useState<SnackbarState>({
     open: false,
     vertical: 'top',
     horizontal: 'center',
   });
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [chatFromMenu, setChatFromMenu] = useState(null);
-  const [dataDialogOpen, setDataDialogOpen] = useState(false);
-  const [dataToShow, setDataToShow] = useState('');
-
   const { vertical, horizontal, open } = state;
 
   const handleClose = () => {
     setState({ ...state, open: false });
   };
 
+  const showSnackbar = (message: string) => {
+    setSnackbarMessage(message);
+    setState((prevState) => ({ ...prevState, open: true }));
+  }
+
+  // initialization
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -121,112 +232,6 @@ const Dashboard = () => {
     return storedMessages ? JSON.parse(storedMessages) : {};
   };
 
-  const handleSendMessage = async () => {
-    if (!session || currentChat === null) return;
-
-    if (currentMessage === '') {
-      setSnackbarMessage("please enter a query");
-      setState((prevState) => ({ ...prevState, open: true }));
-      return
-    }
-
-    const timestamp = new Date();
-    const newMessage = { text: currentMessage, timestamp, isResponse: false };
-
-    let context: string[] = []
-    if (messages[currentChat]) {
-      const prevMessages = messages[currentChat].filter(message => !message.isResponse).slice(-3);
-      context = prevMessages.map(message => message.text)
-    }
-
-    const updateMessages = (newMessages: React.SetStateAction<Record<number, Message[]>>) => {
-      setMessages(newMessages);
-      localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(newMessages));
-    };
-
-    const updatedMessages = {
-      ...messages,
-      [currentChat]: [...(messages[currentChat] || []), newMessage],
-    };
-    updateMessages(updatedMessages);
-    setCurrentMessage('');
-
-    setInferring(true);
-
-    try {
-      const { data: { response } } = await axios.post(endpoint + '/api/send-message', {
-        userId: session.user.id,
-        currentChat,
-        userMessage: currentMessage,
-        context,
-        modelId: chats.find(chat => chat.model_id === currentChat)?.model_id,
-      });
-
-      const responseMessage = { text: response, timestamp, isResponse: true };
-      const updatedMessagesWithResponse = {
-        ...updatedMessages,
-        [currentChat]: [...updatedMessages[currentChat], responseMessage],
-      };
-      updateMessages(updatedMessagesWithResponse);
-    } catch (error: any) {
-      // console.error('Error generating response:', error);
-      const messageToDisplay = error.response.status === 429 ? "rate limit reached" : "error generating response";
-      setSnackbarMessage(messageToDisplay);
-      setState((prevState) => ({ ...prevState, open: true }));
-    }
-
-    setInferring(false);
-  };
-
-
-  const handleClearChat = () => {
-    if (!session) return;
-    const updatedMessages: React.SetStateAction<Record<number, Message[]>> = { ...messages, [currentChat!]: [] };
-    setMessages(updatedMessages);
-    localStorage.setItem(`chat_messages_${session.user.id}`, JSON.stringify(updatedMessages));
-  };
-
-  const handleDeleteChat = async (modelId: number) => {
-    try {
-      await axios.delete(endpoint + '/api/delete-chat', { params: { userId: session.user.id, modelId } });
-      setChats(chats.filter((chat) => chat.model_id !== modelId));
-      setMessages((prevMessages) => {
-        const updatedMessages = { ...prevMessages };
-        delete updatedMessages[modelId];
-        return updatedMessages;
-      });
-      setAnchorEl(null);
-      setChatFromMenu(null);
-    } catch (error) {
-      // console.error('Error deleting chat:', error);
-      setSnackbarMessage('error deleting chat');
-      setState((prevState) => ({ ...prevState, open: true }));
-    }
-  };
-
-  const handleSeeData = async (modelId: number) => {
-    try {
-      setAnchorEl(null);
-      setChatFromMenu(null);
-      const data = await axios.get(endpoint + '/api/get-data', { params: { userId: session.user.id, modelId } });
-      setDataToShow(data.data.join('\n------------------------------\n'));
-      setDataDialogOpen(true);
-
-    } catch (error) {
-      setSnackbarMessage('error getting data');
-      setState((prevState) => ({ ...prevState, open: true }));
-    }
-  };
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-  };
-
-  const refreshDash = () => {
-    setShowConfig(false);
-  }
-
   const gradient = (
     <Container
       style={{
@@ -256,24 +261,25 @@ const Dashboard = () => {
     </Container >
   );
 
+  const snackbar = <Snackbar
+    open={open}
+    autoHideDuration={3000}
+    onClose={handleClose}
+    message={snackbarMessage}
+    key={vertical + horizontal}
+  />
+
   if (showConfig) {
     return <>
+      {snackbar}
       {gradient}
-      <Config session={session} refreshDash={refreshDash} />
+      <Config session={session} refreshDash={refreshDash} showSnackbar={showSnackbar} endpoint={endpoint} />
     </>;
   }
 
   return (
     <Container>
-      <Snackbar
-        open={open}
-        autoHideDuration={3000}
-        onClose={handleClose}
-        message={snackbarMessage}
-        key={vertical + horizontal}
-      />
-
-
+      {snackbar}
       {gradient}
       <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column', m: 0 }}>
         <AppBar position="static" sx={{ bgcolor: '#9ab08f', m: 0, minHeight: '40px' }}>
@@ -307,8 +313,6 @@ const Dashboard = () => {
                 chat with the web
               </Typography>
             </Box>
-
-
 
             <div style={{ flexGrow: 1 }}></div>
             <Box sx={{ mr: { xs: 1, sm: -1.5 } }}>
@@ -409,7 +413,10 @@ const Dashboard = () => {
           </Dialog>
           <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
             <Box
-              sx={{ flexGrow: 1, overflow: 'auto', p: 3, bgcolor: '#F2F1E9', whiteSpace: 'pre-wrap', wordBreak: 'break-word', mb: -3, mt: -1 }}
+              sx={{
+                flexGrow: 1, overflow: 'auto', p: 3, bgcolor: '#F2F1E9',
+                whiteSpace: 'pre-wrap', wordBreak: 'break-word', mb: -3, mt: -1
+              }}
               ref={messagesContainerRef}
             >
               {currentChat !== null && messages[currentChat]?.map((msg: Message, index: number) => (
@@ -443,9 +450,10 @@ const Dashboard = () => {
                   }
                 }}
               />
-              {inferring ? <CircularProgress color='inherit' /> : <IconButton color="primary" onClick={handleSendMessage}>
-                <SendIcon sx={{ color: 'grey' }} />
-              </IconButton>}
+              {inferring ? <CircularProgress color='inherit' /> :
+                <IconButton color="primary" onClick={handleSendMessage}>
+                  <SendIcon sx={{ color: 'grey' }} />
+                </IconButton>}
             </Box>
           </Box>
         </Box>

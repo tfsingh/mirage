@@ -1,23 +1,20 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup, Typography, Box, FormControl, FormLabel, Tooltip, Container, LinearProgress } from '@mui/material';
+import {
+    AppBar, Button, TextField, Checkbox, FormControlLabel, FormGroup,
+    Typography, Box, FormControl, FormLabel, Tooltip, Container, LinearProgress
+} from '@mui/material';
 import './App.css';
-import Snackbar from '@mui/material/Snackbar';
-
-interface SnackbarState {
-    open: boolean;
-    vertical: 'top' | 'bottom';
-    horizontal: 'left' | 'center' | 'right';
-}
 
 interface ConfigProps {
     session: any;
     refreshDash: any;
+    showSnackbar: any;
+    endpoint: string;
 }
 
-const endpoint = import.meta.env.VITE_BACKEND_ENDPOINT
-
-const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
+const Config: React.FC<ConfigProps> = ({ session, refreshDash, showSnackbar, endpoint }) => {
+    // form
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -26,18 +23,6 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
     const [chunkPages, setChunkPages] = useState(false);
     const [scraping, setScraping] = useState(false);
     const [depth, setDepth] = useState('1');
-    const [state, setState] = React.useState<SnackbarState>({
-        open: false,
-        vertical: 'top',
-        horizontal: 'center',
-    });
-    const [snackbarMessage, setSnackbarMessage] = useState('');
-
-    const { vertical, horizontal, open } = state;
-
-    const handleClose = () => {
-        setState({ ...state, open: false });
-    };
 
     const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setUrl(event.target.value);
@@ -75,8 +60,7 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
         }
 
         if (baseUrl !== "" && !url.startsWith(baseUrl)) {
-            setSnackbarMessage("url must start with given base url")
-            setState({ ...state, open: true });
+            showSnackbar("url must start with given base url")
             return
         }
 
@@ -123,21 +107,13 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
             } else {
                 messageToDisplay = "error configuring chat";
             }
-            setSnackbarMessage(messageToDisplay)
-            setState({ ...state, open: true });
+            showSnackbar(messageToDisplay)
         }
         setScraping(false);
     };
 
     return (
         <Container>
-            <Snackbar
-                open={open}
-                autoHideDuration={3000}
-                onClose={handleClose}
-                message={snackbarMessage}
-                key={vertical + horizontal}
-            />
             <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
                 <Box sx={{ backgroundColor: 'white', maxWidth: '600px', margin: '0 auto', width: 'auto', bgcolor: '#F2F1E9' }}>
                     <AppBar position="static" color="default" sx={{
@@ -150,10 +126,15 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
 
                     <Box sx={{ display: 'flex', justifyContent: 'center', bgcolor: '#F2F1E9' }}>
                         <Box sx={{
-                            backgroundColor: 'white', display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-start', p: 1, width: '100%', bgcolor: '#F2F1E9'
+                            backgroundColor: 'white', display: 'flex', flexDirection: 'row', justifyContent: 'center',
+                            alignItems: 'flex-start', p: 1, width: '100%', bgcolor: '#F2F1E9'
                         }}>
-                            < Box sx={{ backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', mr: 2, p: 1, bgcolor: '#F2F1E9' }}>
-                                <FormControl component="form" onSubmit={handleSubmit} variant="standard" sx={{ width: '100%', bgcolor: '#F2F1E9' }}>
+                            < Box sx={{
+                                backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center',
+                                justifyContent: 'center', mr: 2, p: 1, bgcolor: '#F2F1E9'
+                            }}>
+                                <FormControl component="form" onSubmit={handleSubmit} variant="standard"
+                                    sx={{ width: '100%', bgcolor: '#F2F1E9' }}>
                                     <TextField
                                         label="chat name"
                                         variant="outlined"
@@ -242,7 +223,8 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
                                         }}
                                     >
                                         <FormControlLabel
-                                            control={<Checkbox size="small" checked={ignoreFragments} onChange={handleIgnoreFragmentsChange} />}
+                                            control={<Checkbox size="small" checked={ignoreFragments}
+                                                onChange={handleIgnoreFragmentsChange} />}
                                             label="ignore fragments"
                                             sx={{ mb: -1 }}
                                         />
@@ -264,34 +246,41 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
                                         }}
                                     >
                                         <FormControlLabel
-                                            control={<Checkbox size="small" checked={chunkPages} onChange={handleChunkPagesChange} />}
+                                            control={<Checkbox size="small" checked={chunkPages}
+                                                onChange={handleChunkPagesChange} />}
                                             label="chunk pages"
                                             sx={{ mb: 0.5 }}
                                         />
                                     </Tooltip>
 
-                                    {scraping ? <Box sx={{ mt: 1.5, color: '#3a4037' }}><LinearProgress color='inherit' /> </Box> : <Button type="submit" variant="contained" sx={{
-                                        bgcolor: '#9ab08f',
-                                        color: '#3a4037',
-                                        textTransform: 'lowercase',
-                                        fontSize: '18px',
-                                        '&:hover': {
+                                    {scraping ? <Box sx={{ mt: 1.5, color: '#3a4037' }}>
+                                        <LinearProgress color='inherit' /> </Box> :
+                                        <Button type="submit" variant="contained" sx={{
                                             bgcolor: '#9ab08f',
                                             color: '#3a4037',
-                                        }
-                                    }}>
-                                        submit
-                                    </Button>}
+                                            textTransform: 'lowercase',
+                                            fontSize: '18px',
+                                            '&:hover': {
+                                                bgcolor: '#9ab08f',
+                                                color: '#3a4037',
+                                            }
+                                        }}>
+                                            submit
+                                        </Button>}
                                 </FormControl>
                             </Box>
 
-                            <Box sx={{ backgroundColor: 'white', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', p: 1, bgcolor: '#F2F1E9' }}>
+                            <Box sx={{
+                                backgroundColor: 'white', display: 'flex', flexDirection: 'column',
+                                alignItems: 'flex-start', justifyContent: 'center', p: 1, bgcolor: '#F2F1E9'
+                            }}>
                                 <FormGroup>
                                     <FormLabel component="legend">tags to scrape: </FormLabel>
                                     {['h1', 'h2', 'h3', 'p', 'code', 'textarea', 'li', 'table'].map((tag) => (
                                         <FormControlLabel
                                             key={tag}
-                                            control={<Checkbox size="small" value={tag} checked={selectedTags.includes(tag)} onChange={handleTagChange} />}
+                                            control={<Checkbox size="small" value={tag}
+                                                checked={selectedTags.includes(tag)} onChange={handleTagChange} />}
                                             label={tag}
                                             sx={{ margin: 0, padding: 0, mb: -1 }}
                                         />
