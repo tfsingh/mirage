@@ -1,7 +1,7 @@
 import modal
 from typing import Dict
 from modal import Image, gpu, build, enter, exit, web_endpoint, Secret, method
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 GPU_CONFIG = gpu.Any()
@@ -96,7 +96,7 @@ class RAG:
 
         if not docs:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_204_NO_CONTENT,
                 detail="Issue loading data",
                 headers={"WWW-Authenticate": "Bearer"},
             )
@@ -111,3 +111,32 @@ class RAG:
 
         return [result["content"] for result in search_results]
 
+@stub.function(volumes={"/data": volume}, secrets=[Secret.from_name("mirage-token")])
+@web_endpoint(method="GET")
+def get_data(
+    model_id: str = Query(...),
+    user_id: str = Query(...),
+    token: HTTPAuthorizationCredentials = Depends(auth_scheme),
+):
+    import os
+    import json
+
+    if token.credentials != os.environ["AUTH_TOKEN"]:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect bearer token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    volume.reload()
+    file_path = f"/data/{user_id}-{model_id}.json"
+    print(file_path)
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            return json.load(file)
+
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Issue loading data",
+        headers={"WWW-Authenticate": "Bearer"},
+    )

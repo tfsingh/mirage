@@ -4,6 +4,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
 import LogoutIcon from '@mui/icons-material/Logout';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
 import Config from './Config';
 import { MeshGradientRenderer } from '@johnn-e/react-mesh-gradient';
 import { createClient } from '@supabase/supabase-js'
@@ -52,7 +54,9 @@ const Dashboard = () => {
   });
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
-  const [chatToDelete, setChatToDelete] = useState(null);
+  const [chatFromMenu, setChatFromMenu] = useState(null);
+  const [dataDialogOpen, setDataDialogOpen] = useState(false);
+  const [dataToShow, setDataToShow] = useState('');
 
   const { vertical, horizontal, open } = state;
 
@@ -121,7 +125,7 @@ const Dashboard = () => {
     if (!session || currentChat === null) return;
 
     if (currentMessage === '') {
-      setSnackbarMessage("Please enter a query");
+      setSnackbarMessage("please enter a query");
       setState((prevState) => ({ ...prevState, open: true }));
       return
     }
@@ -166,7 +170,7 @@ const Dashboard = () => {
       updateMessages(updatedMessagesWithResponse);
     } catch (error: any) {
       // console.error('Error generating response:', error);
-      const messageToDisplay = error.response.status === 429 ? "Rate limit reached" : "Error generating response";
+      const messageToDisplay = error.response.status === 429 ? "rate limit reached" : "error generating response";
       setSnackbarMessage(messageToDisplay);
       setState((prevState) => ({ ...prevState, open: true }));
     }
@@ -192,13 +196,28 @@ const Dashboard = () => {
         return updatedMessages;
       });
       setAnchorEl(null);
-      setChatToDelete(null);
+      setChatFromMenu(null);
     } catch (error) {
       // console.error('Error deleting chat:', error);
-      setSnackbarMessage('Error deleting chat');
+      setSnackbarMessage('error deleting chat');
       setState((prevState) => ({ ...prevState, open: true }));
     }
   };
+
+  const handleSeeData = async (modelId: number) => {
+    try {
+      setAnchorEl(null);
+      setChatFromMenu(null);
+      const data = await axios.get(endpoint + '/api/get-data', { params: { userId: session.user.id, modelId } });
+      setDataToShow(data.data.join('\n------------------------------\n'));
+      setDataDialogOpen(true);
+
+    } catch (error) {
+      setSnackbarMessage('Error getting data');
+      setState((prevState) => ({ ...prevState, open: true }));
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -253,6 +272,7 @@ const Dashboard = () => {
         message={snackbarMessage}
         key={vertical + horizontal}
       />
+
 
       {gradient}
       <Box sx={{ display: 'flex', height: '92vh', flexDirection: 'column', m: 0 }}>
@@ -340,7 +360,7 @@ const Dashboard = () => {
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setAnchorEl(e.currentTarget);
-                    setChatToDelete(chat.model_id);
+                    setChatFromMenu(chat.model_id);
                   }}
                 >
                   <ListItemText primary={chat.model_name} />
@@ -352,7 +372,7 @@ const Dashboard = () => {
             open={Boolean(anchorEl)}
             onClose={() => {
               setAnchorEl(null);
-              setChatToDelete(null);
+              setChatFromMenu(null);
             }}
             anchorOrigin={{
               vertical: 'top',
@@ -368,13 +388,25 @@ const Dashboard = () => {
                 boxShadow: '0px 2px 5px rgba(0, 0, 0, 0.2)',
                 padding: '0',
                 minWidth: 'auto',
-                maxHeight: '35px',
                 overflowY: 'hidden',
               },
             }}
           >
-            <MenuItem onClick={() => handleDeleteChat(chatToDelete)}>delete chat</MenuItem>
+            <MenuItem onClick={() => handleDeleteChat(chatFromMenu)}>delete chat</MenuItem>
+            <MenuItem onClick={() => handleSeeData(chatFromMenu)}>see data</MenuItem>
           </Menu>
+          <Dialog
+            open={dataDialogOpen}
+            onClose={() => setDataDialogOpen(false)}
+            aria-labelledby="data-dialog-title"
+            aria-describedby="data-dialog-description"
+            maxWidth="md"
+            fullWidth
+          >
+            <DialogContent>
+              <pre style={{ whiteSpace: 'pre-wrap' }}>{dataToShow}</pre>
+            </DialogContent>
+          </Dialog>
           <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
             <Box
               sx={{ flexGrow: 1, overflow: 'auto', p: 3, bgcolor: '#F2F1E9', whiteSpace: 'pre-wrap', wordBreak: 'break-word', mb: -3, mt: -1 }}
@@ -402,7 +434,7 @@ const Dashboard = () => {
                 variant="outlined"
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
-                placeholder="Type your message here..."
+                placeholder="type your message here..."
                 sx={{ mr: 1, ml: 1, mb: 1 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {

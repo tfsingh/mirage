@@ -269,6 +269,25 @@ app.delete('/api/delete-chat', async (req, res) => {
   }
 });
 
+app.get('/api/get-data', async (req, res) => {
+  const { userId, modelId } = req.query;
+
+  try {
+    const modelData = await axios.get(
+      `${process.env.GET_DATA_ENDPOINT}?user_id=${userId}&model_id=${modelId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.MIRAGE_AUTH_TOKEN_MODAL}`,
+        },
+      }
+    );
+    return res.status(200).send(modelData.data);
+  } catch (getDataError) {
+    console.error('Error in getting data:', getDataError);
+    return res.status(500).send('Error in getting data');
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });

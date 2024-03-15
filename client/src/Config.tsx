@@ -112,11 +112,11 @@ const Config: React.FC<ConfigProps> = ({ session, refreshDash }) => {
             // console.error('There was an error:', error);
             let messageToDisplay;
             if (error.response && error.response.status === 400) {
-                messageToDisplay = "Duplicate chat name not allowed";
+                messageToDisplay = "duplicate chat name not allowed";
             } else if (error.response && error.response.data && error.response.data != "Internal Server Error") {
                 messageToDisplay = error.response.data;
             } else {
-                messageToDisplay = "Error configuring chat";
+                messageToDisplay = "error configuring chat";
             }
             setSnackbarMessage(messageToDisplay)
             setState({ ...state, open: true });
