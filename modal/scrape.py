@@ -121,9 +121,12 @@ async def scrape(item: Dict, token: HTTPAuthorizationCredentials = Depends(auth_
 
     data = []
     params = ({'url': url, 'rules': item['rules']} for url in links)
-    for url, text in scrape_page.map(params, return_exceptions=True):
-        #data.append((url, text))
-        data.append(text)
+    for obj in scrape_page.map(params, return_exceptions=True):
+        try:
+            url, text = obj
+            data.append(text)
+        except Exception:
+            continue
 
     #print(data)
 
