@@ -6,8 +6,8 @@ import { Auth } from '@supabase/auth-ui-react'
 import { ThemeMinimal } from '@supabase/auth-ui-shared'
 import axios from 'axios';
 import {
-  Box, List, ListItem, ListItemText, TextField, AppBar, Toolbar,
-  Typography, IconButton, Container, Tooltip, CircularProgress
+  Box, List, ListItem, ListItemText, AppBar, Toolbar, Typography,
+  IconButton, Container, Tooltip, CircularProgress, OutlinedInput
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
@@ -436,13 +436,18 @@ const Dashboard = () => {
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', p: 1, bgcolor: '#F2F1E9', color: 'grey' }}>
-              <TextField
-                fullWidth
-                variant="outlined"
+              <OutlinedInput
+                multiline
+                maxRows={6}
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 placeholder="type your message here..."
-                sx={{ mr: 1, ml: 1, mb: 1 }}
+                sx={{
+                  width: '100%',
+                  mr: 1,
+                  ml: 1,
+                  mb: 1
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
