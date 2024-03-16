@@ -110,11 +110,13 @@ app.post('/api/send-message', async (req, res) => {
           role: 'system',
           content: `Given the following results ${JSON.stringify(
             rag_results.data
-          )} and the following query ${userMessage}, with the previous queries sent by the user being ${context}, return the best informed response to the current query with no formatting. 
+          )} and the following query ${userMessage}, with the previous queries sent by the user being ${context},
+          return the best informed response to the current query with no formatting, no markdown, 
+          just plain text (bullets, new lines, indentation etc are acceptable).
           Stick to the data as much as possible but interpret where necessary.`,
         },
       ],
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-3.5-turbo',
     });
 
     res.json({ response: completion.choices[0].message.content });
