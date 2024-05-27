@@ -12,8 +12,19 @@ const __dirname = path.resolve();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const RATE_LIMIT = 30;
+const allowedOrigin = 'https://www.trymirage.chat';
 
-app.use(cors());
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (origin === allowedOrigin || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'dist')));
 
@@ -116,7 +127,7 @@ app.post('/api/send-message', async (req, res) => {
           Stick to the data as much as possible but interpret where necessary.`,
         },
       ],
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
     });
 
     res.json({ response: completion.choices[0].message.content });

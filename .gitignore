@@ -22,9 +22,9 @@ client/*.local
 **/*.sw?
 
 **/__pycache__
-modal/playground.py
-modal/returned_data.csv
-modal/interop.py
+server/modal/playground.py
+server/modal/returned_data.csv
+server/modal/interop.py
 
 **/.env
 **/.env.local
